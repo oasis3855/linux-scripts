@@ -35,17 +35,15 @@ use utf8;
 use Getopt::Long;
 use File::Basename;
 
-my $output_filepath = '';	# 出力ファイル名（指定しないときはコンソールに出力）
 my $dulation_sec = 300;		# それぞれの画像表示時間
 my $transition_sec = 0;		# 画像切り替え時間（秒）。0 の場合は transition を用いない
 
 # プログラム引数を取り込む
+GetOptions('dulation|d=i' => \ $dulation_sec,
+                'transition|t=i' => \ $transition_sec);
+# プログラム引数よりオプションスイッチを読み込んだ残りは、ファイル名
 if($#ARGV < 0){ sub_print_usage(); exit; }	# 画像ファイルが指定されないとき
 my @arr_imagefile = @ARGV;	# 画像ファイル（アスタリスクの検索展開済み）リストを読み込む
-
-GetOptions('output|o=s' => \ $output_filepath,
-                'dulation|d=i' => \ $dulation_sec,
-                'transition|t=i' => \ $transition_sec);
 
 # 画像ファイル配列中より、ファイル以外を配列から除外する
 for(my $i=0; $i<=$#arr_imagefile; $i++){
@@ -64,10 +62,7 @@ my $str = "<background>\n".
 	"  <minute>00</minute>\n".
 	"  <second>00</second>\n".
 	" </starttime>\n";
-
-
 for(my $i=0; $i<=$#arr_imagefile; $i++){
-#	unless( -f $arr_imagefile[$i] ){ next; }
 	$str = $str . " <static>\n".
 		"  <duration>".$dulation_sec."</duration>\n".
 		"  <file>".$arr_imagefile[$i]."</file>\n".
@@ -81,7 +76,6 @@ for(my $i=0; $i<=$#arr_imagefile; $i++){
 			" </transition>\n";
 	}
 }
-
 $str .= "</background>\n";
 
 print $str;
@@ -89,18 +83,16 @@ print $str;
 exit;
 
 sub sub_print_usage {
-	print("NAME\n".
+	print(STDERR "NAME\n".
 		"    ".basename($0, '.pl')." - Gnome background image transition xml creater\n\n".
 		"SYNOPSIS\n".
 		"   ".basename($0)." [options] [imagefile scan path]\n\n".
 		"OPTIONS\n".
-		"    -o=str, -output=str\n".
-		"        output filepath. if not specified, output to console\n".
 		"    -d=num, -dulation=num\n".
 		"        image change interval (sec). if not specified, use default 300 sec\n".
 		"    -t=num, -transition=num\n".
 		"        image transition interval (sec). if not specified, use default 0 sec\n\n".
 		"EXAMPLES\n".
-		"    ".basename($0)." -o=background.xml -t=2 /usr/share/backgrounds/*.jpg\n\n");
+		"    ".basename($0)." -t=2 /usr/share/backgrounds/*.jpg > output.xml\n\n");
 
 }
