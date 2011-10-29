@@ -2,12 +2,11 @@
 
 # save this file in << UTF-8  >> encode !
 # ******************************************************
-# Software name : Web-Addrbook （Thunderbird連絡先管理DB）
+# Software name :
+#   gpx2csv.pl : GPXファイルをCSV形式にコンバートする
 #
 # Copyright (C) INOUE Hirokazu, All Rights Reserved
 #     http://oasis.halfmoon.jp/
-#
-# gpx2csv.pl : GPXファイルをCSV形式にコンバートする
 #
 # GNU GPL Free Software
 #
