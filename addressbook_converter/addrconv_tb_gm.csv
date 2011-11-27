@@ -1,0 +1,25 @@
+Name,表示名
+Given Name,名
+Additional Name,
+Family Name,姓
+Yomi Name,
+Given Name Yomi,
+Additional Name Yomi,
+Family Name Yomi,
+E-mail 1 - Value,メールアドレス
+E-mail 2 - Value,のメールアドレス
+Phone 1 - Type,#自宅TEL
+Phone 1 - Value,自宅の電話番号
+Phone 2 - Type,#仕事TEL
+Phone 2 - Value,勤務先の電話番号
+Phone 3 - Type,#携帯TEL
+Phone 3 - Value,携帯電話番号
+Phone 4 - Type,#FAX
+Phone 4 - Value,FAX 番号
+Address 1 - Street,番地 (自宅)+番地 (自宅) 2
+Address 1 - City,市区町村 (自宅)
+Address 1 - Region,都道府県 (自宅)
+Address 1 - Type,
+Address 1 - Formatted,都道府県 (自宅)+市区町村 (自宅)+番地 (自宅)+番地 (自宅) 2
+Birthday,誕生年+#/+誕生月+#/+誕生日
+Notes,メモ
