@@ -1,0 +1,37 @@
+First Name,名
+Last Name,姓
+Display Name,表示名
+Nickname,ニックネーム
+Primary Email,メールアドレス
+Secondary Email,別のメールアドレス
+Screen Name,スクリーンネーム
+Work Phone,勤務先の電話番号
+Home Phone,自宅の電話番号
+Fax Number,FAX 番号
+Pager Number,ポケットベル番号
+Mobile Number,携帯電話番号
+Home Address,番地 (自宅)
+Home Address 2,番地 (自宅) 2
+Home City,市区町村 (自宅)
+Home State,都道府県 (自宅)
+Home ZipCode,郵便番号 (自宅)
+Home Country,国 (自宅)
+Work Address,番地 (勤務先)
+Work Address 2,番地 (勤務先) 2
+Work City,市区町村 (勤務先)
+Work State,都道府県 (勤務先)
+Work ZipCode,郵便番号 (勤務先)
+Work Country,国 (勤務先)
+Job Title,役職
+Department,部門
+Organization,組織
+Web Page 1,Web ページ 1
+Web Page 2,Web ページ 2
+Birth Year,誕生年
+Birth Month,誕生月
+Birth Day,誕生日
+Custom 1,追加情報 1
+Custom 2,追加情報 2
+Custom 3,追加情報 3
+Custom 4,追加情報 4
+Notes,メモ

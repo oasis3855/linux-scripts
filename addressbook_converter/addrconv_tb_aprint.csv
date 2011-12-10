@@ -2,9 +2,9 @@ name1,姓+ +名
 postcode,郵便番号 (自宅)
 addr1,都道府県 (自宅)+ +市区町村 (自宅)
 addr2,番地 (自宅)+ +番地 (自宅) 2
-,
-,
-,
+company1,部門
+company2,組織
+title,役職
 name2,姓+ +名
 ,#様
 ,
