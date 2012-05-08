@@ -8,6 +8,7 @@
 # GNU GPL Free Software (GPL Version 2)
 #
 # Version 0.1 (2012/03/03)
+# Version 0.2 (2012/05/08)
 #
 
 import sys
@@ -16,6 +17,7 @@ import appindicator
 import imaplib
 import re
 import pynotify
+import os
 
 #####
 # GLOBAL VAR
@@ -27,9 +29,14 @@ MAIL_USER = 'user_name'
 #MAIL_PASSWORD = 'user_password'
 MAIL_PASSWORD = ''
 # メールをチェックする間隔（秒）
-CHECK_INTERVAL_SEC =  600    # sec
+CHECK_INTERVAL_SEC =  300    # sec
 # 前回と同じ未読メール数の場合はポップアップ表示しない
-FLAG_NOPOPUP_UNREAD_SAME = True
+#FLAG_NOPOPUP_UNREAD_SAME = True
+FLAG_NOPOPUP_UNREAD_SAME = False
+# メールソフト（MUA）の実行ファイル名（環境変数のパス内の場合はフルパス名は不要）
+MUA_PROGRAM = 'thunderbird';
+# メールソフト実行のメニュー表示文字列
+MUA_MENU_STRING = 'Thunderbirdを起動'
 # 前回チェック時の未読メール数（ポップアップ表示制御に利用）
 prev_unread_count = 0
 
@@ -58,6 +65,11 @@ class CheckImapMail:
 
         self.checknow_item = gtk.MenuItem("今すぐメールをチェック")
         self.checknow_item.connect("activate", self.menu_check_now)
+        self.checknow_item.show()
+        self.menu.append(self.checknow_item)
+
+        self.checknow_item = gtk.MenuItem(MUA_MENU_STRING)
+        self.checknow_item.connect("activate", self.menu_exec_mailprog)
         self.checknow_item.show()
         self.menu.append(self.checknow_item)
 
@@ -171,6 +183,8 @@ class CheckImapMail:
                 dlg_notify = pynotify.Notification(str_title, str_msg, "mail-unread")
                 dlg_notify.show()
                 prev_unread_count = unread
+                # 音を鳴らす
+                os.system("/usr/bin/canberra-gtk-play --id='complete'")
         else:
             self.ind.set_status(appindicator.STATUS_ACTIVE)
 
@@ -194,6 +208,11 @@ class CheckImapMail:
             dlg.run()
             dlg.destroy()
             return False, 0
+
+    #####
+    # メニュー ： メールソフトを起動する
+    def menu_exec_mailprog(self, widget):
+        os.spawnlp(os.P_NOWAIT, MUA_PROGRAM, MUA_PROGRAM)
 
 
 if __name__ == "__main__":
