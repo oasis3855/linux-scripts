@@ -9,6 +9,7 @@
 #
 # Version 0.1 (2012/03/03)
 # Version 0.2 (2012/05/08)
+# Version 0.2.1 (2012/06/07)
 #
 
 import sys
@@ -166,7 +167,7 @@ class CheckImapMail:
         messages, unread = self.imap_mail_check(MAIL_SERVER, MAIL_USER, MAIL_PASSWORD)
 
         # メールサーバ接続エラーの場合（アイコンを変化させ、ポップアップを表示する）
-        if messages == False:
+        if messages == -1:
             self.ind.set_icon("error")     # STATUS_ACTIVE のアイコンを設定（接続断アイコン）
             self.ind.set_status(appindicator.STATUS_ACTIVE)
             dlg_notify = pynotify.Notification('未読メール通知インジケータ', 'メールサーバに接続できませんでした', "dialog-error")
@@ -185,6 +186,7 @@ class CheckImapMail:
                 prev_unread_count = unread
                 # 音を鳴らす
                 os.system("/usr/bin/canberra-gtk-play --id='complete'")
+                return True
         else:
             self.ind.set_status(appindicator.STATUS_ACTIVE)
 
@@ -207,7 +209,8 @@ class CheckImapMail:
             dlg.format_secondary_text(str_msg)
             dlg.run()
             dlg.destroy()
-            return False, 0
+            # IMAP4エラーの場合、"メッセージ数"で-1を返す
+            return -1, 0
 
     #####
     # メニュー ： メールソフトを起動する
