@@ -10,6 +10,7 @@
 # Version 0.1 (2012/03/03)
 # Version 0.2 (2012/05/08)
 # Version 0.2.1 (2012/06/07)
+# Version 0.3 (2012/06/08)
 #
 
 import sys
@@ -19,15 +20,16 @@ import imaplib
 import re
 import pynotify
 import os
+import ConfigParser
+import base64
 
 #####
 # GLOBAL VAR
-# メールサーバ（IMAP4サーバ）
+# メールサーバ（IMAP4サーバ）：設定ファイルが自動作成されるので、ここを書き換える必要はない！
 MAIL_SERVER = 'imap.example.com'
-# メールサーバのログインユーザ名
+# メールサーバのログインユーザ名：設定ファイルが自動作成されるので、ここを書き換える必要はない！
 MAIL_USER = 'user_name'
-# メールサーバのログインパスワード（空欄にしておいても、実行後に入力できる）
-#MAIL_PASSWORD = 'user_password'
+# メールサーバのログインパスワード：設定ファイルが自動作成されるので、ここを書き換える必要はない！
 MAIL_PASSWORD = ''
 # メールをチェックする間隔（秒）
 CHECK_INTERVAL_SEC =  300    # sec
@@ -58,6 +60,8 @@ class CheckImapMail:
         # 通知ポップアップの初期化
         if not pynotify.init("Mail Notifier"):
             sys.exit(-1)
+        # 設定ファイルの読み込み（IMAP4サーバ名、ユーザ名、パスワード）
+        self.config_file_read()
 
     #####
     # コンテキストメニュー 設定（クラスのコンストラクタから呼び出される）
@@ -74,7 +78,7 @@ class CheckImapMail:
         self.checknow_item.show()
         self.menu.append(self.checknow_item)
 
-        self.config_item = gtk.MenuItem("パスワード入力")
+        self.config_item = gtk.MenuItem("設定")
         self.config_item.connect("activate", self.menu_config_dialog)
         self.config_item.show()
         self.menu.append(self.config_item)
@@ -111,19 +115,37 @@ class CheckImapMail:
     #####
     # メニュー ： パスワード入力ダイアログ
     def menu_config_dialog(self, widget):
-        global MAIL_PASSWORD
+        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER
         dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK_CANCEL, message_format='未読メール通知インジケータ')
-        dlg.format_secondary_text('メールサーバのログオンパスワードを入力します')
+        dlg.format_secondary_text('メールサーバのログオン情報を入力します')
         dlg_content = dlg.get_content_area()
-        text_entry = gtk.Entry()
-        text_entry.set_visibility(False)
-        dlg_content.pack_start(text_entry)
+        label_server = gtk.Label('メール（IMAP4）サーバ名')
+        text_entry_server = gtk.Entry()
+        text_entry_server.set_text(MAIL_SERVER)
+        label_user = gtk.Label('ユーザ名')
+        text_entry_user = gtk.Entry()
+        text_entry_user.set_text(MAIL_USER)
+        label_password = gtk.Label('パスワード')
+        text_entry_password = gtk.Entry()
+        text_entry_password.set_visibility(False)
+        text_entry_password.set_text(MAIL_PASSWORD)
+        dlg_content.add(label_server)
+        dlg_content.add(text_entry_server)
+        dlg_content.add(label_user)
+        dlg_content.add(text_entry_user)
+        dlg_content.add(label_password)
+        dlg_content.add(text_entry_password)
         dlg.show_all()
         ret = dlg.run()
-        text = text_entry.get_text().decode('utf8')
+        text_server = text_entry_server.get_text().decode('utf8')
+        text_user = text_entry_user.get_text().decode('utf8')
+        text_password = text_entry_password.get_text().decode('utf8')
         dlg.destroy()
         if ret == gtk.RESPONSE_OK:
-            MAIL_PASSWORD = text
+            MAIL_SERVER = text_server
+            MAIL_USER = text_user
+            MAIL_PASSWORD = text_password
+            self.config_file_write()
             self.check_mail()
 
     #####
@@ -211,11 +233,57 @@ class CheckImapMail:
             dlg.destroy()
             # IMAP4エラーの場合、"メッセージ数"で-1を返す
             return -1, 0
+        except:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format='未読メール通知インジケータ')
+            str_msg = 'IMAP4_SSL) メールサーバ接続時のエラー : 原因不明\n'
+            dlg.format_secondary_text(str_msg)
+            dlg.run()
+            dlg.destroy()
+            # IMAP4エラーの場合、"メッセージ数"で-1を返す
+            return -1, 0
+            
 
     #####
     # メニュー ： メールソフトを起動する
     def menu_exec_mailprog(self, widget):
         os.spawnlp(os.P_NOWAIT, MUA_PROGRAM, MUA_PROGRAM)
+
+    #####
+    # 設定ファイルから読み込む
+    def config_file_read(self):
+        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER
+        parser = ConfigParser.SafeConfigParser()
+        configfile = os.path.join(os.environ['HOME'], '.imap4-newmail-indicator')
+
+        try:
+            fp = open(configfile, 'r')
+            parser.readfp(fp)
+            fp.close()
+            MAIL_USER = parser.get("DEFAULT", "user")
+            MAIL_PASSWORD = base64.b64decode(parser.get("DEFAULT", "password"))
+            MAIL_SERVER = parser.get("DEFAULT", "server")
+        except:
+            # 設定ファイルが読み込めない場合、書き込みを行う（新規作成の時を意図）
+            print >> sys.stderr, "config file error (not found or syntax error)"
+            self.config_file_write()
+            return
+
+    #####
+    # 設定ファイルに書き込む
+    def config_file_write(self):
+        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER
+        parser = ConfigParser.SafeConfigParser()
+        configfile = os.path.join(os.environ['HOME'], '.imap4-newmail-indicator')
+
+        try:
+            fp = open(configfile, 'w')
+            parser.set("DEFAULT", "user", MAIL_USER)
+            parser.set("DEFAULT", "password", base64.b64encode(MAIL_PASSWORD))
+            parser.set("DEFAULT", "server", MAIL_SERVER)
+            parser.write(fp)
+            fp.close()
+        except IOError:
+            print >> sys.stderr, "config write error"
 
 
 if __name__ == "__main__":
