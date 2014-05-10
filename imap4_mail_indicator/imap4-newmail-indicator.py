@@ -11,6 +11,7 @@
 # Version 0.2 (2012/05/08)
 # Version 0.2.1 (2012/06/07)
 # Version 0.3 (2012/06/08)
+# Version 0.4 (2014/05/10)
 #
 
 import sys
@@ -36,6 +37,8 @@ CHECK_INTERVAL_SEC =  300    # sec
 # 前回と同じ未読メール数の場合はポップアップ表示しない
 #FLAG_NOPOPUP_UNREAD_SAME = True
 FLAG_NOPOPUP_UNREAD_SAME = False
+# IMAP接続エラー時のダイアログ表示（この設定にかかわらず、エラーを示すポップアップは表示される）
+FLAG_IMAPERROR_DIALOG = False
 # メールソフト（MUA）の実行ファイル名（環境変数のパス内の場合はフルパス名は不要）
 MUA_PROGRAM = 'thunderbird';
 # メールソフト実行のメニュー表示文字列
@@ -115,36 +118,51 @@ class CheckImapMail:
     #####
     # メニュー ： パスワード入力ダイアログ
     def menu_config_dialog(self, widget):
-        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER
+        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER, CHECK_INTERVAL_SEC
         dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK_CANCEL, message_format='未読メール通知インジケータ')
         dlg.format_secondary_text('メールサーバのログオン情報を入力します')
         dlg_content = dlg.get_content_area()
-        label_server = gtk.Label('メール（IMAP4）サーバ名')
+        hbox_server = gtk.HBox()
+        hbox_server.add(gtk.Label('IMAP4サーバ名'))
         text_entry_server = gtk.Entry()
+        text_entry_server.set_width_chars(30)
         text_entry_server.set_text(MAIL_SERVER)
-        label_user = gtk.Label('ユーザ名')
+        hbox_server.add(text_entry_server)
+        hbox_user = gtk.HBox()
+        hbox_user.add(gtk.Label('ユーザ名'))
         text_entry_user = gtk.Entry()
+        text_entry_user.set_width_chars(30)
         text_entry_user.set_text(MAIL_USER)
-        label_password = gtk.Label('パスワード')
+        hbox_user.add(text_entry_user)
+        hbox_password = gtk.HBox()
+        hbox_password.add(gtk.Label('パスワード'))
         text_entry_password = gtk.Entry()
         text_entry_password.set_visibility(False)
+        text_entry_password.set_width_chars(30)
         text_entry_password.set_text(MAIL_PASSWORD)
-        dlg_content.add(label_server)
-        dlg_content.add(text_entry_server)
-        dlg_content.add(label_user)
-        dlg_content.add(text_entry_user)
-        dlg_content.add(label_password)
-        dlg_content.add(text_entry_password)
+        hbox_password.add(text_entry_password)
+        hbox_interval = gtk.HBox()
+        hbox_interval.add(gtk.Label('チエック周期（秒）'))
+        adj_interval = gtk.Adjustment(value=CHECK_INTERVAL_SEC, lower=60, upper=1800, step_incr=10)
+        hbox_interval.add(gtk.SpinButton(adj_interval, 0))
+        dlg_content.add(hbox_server)
+        dlg_content.add(hbox_user)
+        dlg_content.add(hbox_password)
+        dlg_content.add(hbox_interval)
         dlg.show_all()
         ret = dlg.run()
         text_server = text_entry_server.get_text().decode('utf8')
         text_user = text_entry_user.get_text().decode('utf8')
         text_password = text_entry_password.get_text().decode('utf8')
+        int_interval = int(adj_interval.get_value())
         dlg.destroy()
         if ret == gtk.RESPONSE_OK:
             MAIL_SERVER = text_server
             MAIL_USER = text_user
             MAIL_PASSWORD = text_password
+            CHECK_INTERVAL_SEC = int_interval
+            if CHECK_INTERVAL_SEC < 60 or 1800 < CHECK_INTERVAL_SEC:
+                CHECK_INTERVAL_SEC = 300
             self.config_file_write()
             self.check_mail()
 
@@ -194,6 +212,8 @@ class CheckImapMail:
             self.ind.set_status(appindicator.STATUS_ACTIVE)
             dlg_notify = pynotify.Notification('未読メール通知インジケータ', 'メールサーバに接続できませんでした', "dialog-error")
             dlg_notify.show()
+            # 音を鳴らす
+            os.system("/usr/bin/canberra-gtk-play --id='complete'")
             return True
             
         # 未読メールが存在する場合
@@ -226,19 +246,21 @@ class CheckImapMail:
             imap_instance.logout()
             return (messages, unseen)
         except imaplib.IMAP4.error, e:
-            dlg = gtk.MessageDialog(type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format='未読メール通知インジケータ')
-            str_msg = 'IMAP4_SSL) メールサーバ接続時のエラー : %s\n' % e
-            dlg.format_secondary_text(str_msg)
-            dlg.run()
-            dlg.destroy()
+            if FLAG_IMAPERROR_DIALOG == True:
+                dlg = gtk.MessageDialog(type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format='未読メール通知インジケータ')
+                str_msg = 'IMAP4_SSL) メールサーバ接続時のエラー : %s\n' % e
+                dlg.format_secondary_text(str_msg)
+                dlg.run()
+                dlg.destroy()
             # IMAP4エラーの場合、"メッセージ数"で-1を返す
             return -1, 0
         except:
-            dlg = gtk.MessageDialog(type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format='未読メール通知インジケータ')
-            str_msg = 'IMAP4_SSL) メールサーバ接続時のエラー : 原因不明\n'
-            dlg.format_secondary_text(str_msg)
-            dlg.run()
-            dlg.destroy()
+            if FLAG_IMAPERROR_DIALOG == True:
+                dlg = gtk.MessageDialog(type=gtk.MESSAGE_WARNING, buttons=gtk.BUTTONS_OK, message_format='未読メール通知インジケータ')
+                str_msg = 'IMAP4_SSL) メールサーバ接続時のエラー : 原因不明\n'
+                dlg.format_secondary_text(str_msg)
+                dlg.run()
+                dlg.destroy()
             # IMAP4エラーの場合、"メッセージ数"で-1を返す
             return -1, 0
             
@@ -251,8 +273,13 @@ class CheckImapMail:
     #####
     # 設定ファイルから読み込む
     def config_file_read(self):
-        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER
-        parser = ConfigParser.SafeConfigParser()
+        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER, CHECK_INTERVAL_SEC
+        parser = ConfigParser.SafeConfigParser({
+                'user' : MAIL_USER,
+                'password' : '',
+                'server' : MAIL_SERVER,
+                'interval_sec' : str(CHECK_INTERVAL_SEC)
+            })
         configfile = os.path.join(os.environ['HOME'], '.imap4-newmail-indicator')
 
         try:
@@ -262,6 +289,10 @@ class CheckImapMail:
             MAIL_USER = parser.get("DEFAULT", "user")
             MAIL_PASSWORD = base64.b64decode(parser.get("DEFAULT", "password"))
             MAIL_SERVER = parser.get("DEFAULT", "server")
+            CHECK_INTERVAL_SEC = int(parser.get("DEFAULT", "interval_sec"))
+            # CHECK_INTERVAL_SEC : from 1min to 30min, default 5min
+            if CHECK_INTERVAL_SEC < 60 or 1800 < CHECK_INTERVAL_SEC:
+                CHECK_INTERVAL_SEC = 300
         except:
             # 設定ファイルが読み込めない場合、書き込みを行う（新規作成の時を意図）
             print >> sys.stderr, "config file error (not found or syntax error)"
@@ -271,7 +302,7 @@ class CheckImapMail:
     #####
     # 設定ファイルに書き込む
     def config_file_write(self):
-        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER
+        global MAIL_USER, MAIL_PASSWORD, MAIL_SERVER, CHECK_INTERVAL_SEC
         parser = ConfigParser.SafeConfigParser()
         configfile = os.path.join(os.environ['HOME'], '.imap4-newmail-indicator')
 
@@ -280,6 +311,7 @@ class CheckImapMail:
             parser.set("DEFAULT", "user", MAIL_USER)
             parser.set("DEFAULT", "password", base64.b64encode(MAIL_PASSWORD))
             parser.set("DEFAULT", "server", MAIL_SERVER)
+            parser.set("DEFAULT", "interval_sec", str(CHECK_INTERVAL_SEC))
             parser.write(fp)
             fp.close()
         except IOError:
