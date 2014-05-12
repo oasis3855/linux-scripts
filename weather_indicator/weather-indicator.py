@@ -8,6 +8,7 @@
 # GNU GPL Free Software (GPL Version 2)
 #
 # Version 0.1 (2014/05/11)
+# Version 0.2 (2014/05/12)
 
 import pygtk
 pygtk.require('2.0')
@@ -16,16 +17,19 @@ import datetime
 import appindicator
 import pywapi       # Python天気API (yahoo.comとweather.com用)
                      # https://code.google.com/p/python-weather-api/
-                     
+import urllib       # OpenWeatherMap.org用
+import json
+
 #####
 # GLOBAL VAR
 
-# Station ID of weather.com (ex. Tokyo = JAXX0085, Osaka = JAXX0071, New York = USNY0996)
-STATION_ID = 'JAXX0085'
+# Station ID of weather.com/yahoo.com (ex. Tokyo = JAXX0085, Osaka = JAXX0071, New York = USNY0996)
+# Station ID of OpenWeatherMap.org (ex. Tokyo = 1850147, Osaka = 1853909, New York = 5128638)
+STATION_ID = '1850147'
 # チェックする間隔（秒）
 CHECK_INTERVAL_SEC =  900    # sec
-# 接続先 (YAHOO.COM or WEATHER.COM)
-WEB_SERVICE = 'YAHOO.COM'
+# 接続先 (YAHOO.COM or WEATHER.COM or OPENWEATHERMAP.COM)
+WEB_SERVICE = 'OPENWEATHERMAP.COM'
 
 class WeatherIndicator:
     def __init__(self):
@@ -145,6 +149,26 @@ class WeatherIndicator:
                                 result['atmosphere']['humidity'],
                                 result['atmosphere']['pressure'],
                                 result['condition']['date'])
+            elif WEB_SERVICE == 'OPENWEATHERMAP.COM':
+                url = 'http://api.openweathermap.org/data/2.5/weather?units=metric&id=' + STATION_ID
+                json_tree = json.loads(urllib.urlopen(url).read())
+                # 受信エラーの場合
+                if(str(json_tree['cod']) != '200'):
+                    self.ind.set_icon('weather-severe-alert')   # エラー時の「雨＋警報」アイコン
+                    self.ind.set_label('--℃')
+                    weather_text = "接続エラー"
+                else:
+                    # パネルのアイコンと温度表示
+                    self.ind.set_icon(weather.get_icon_name(json_tree['weather'][0]['icon'], False))
+                    self.ind.set_label(str(round(json_tree['main']['temp'], 1)) + '℃')
+                    # データを読み出す
+                    weather_text = "場所:%s\n天候:%s\n気温:%s\n湿度:%s\n気圧:%s\nデータ日時:%s" % (
+                                    json_tree['name'],
+                                    json_tree['weather'][0]['description'],
+                                    str(json_tree['main']['temp']),
+                                    str(json_tree['main']['humidity']),
+                                    str(json_tree['main']['pressure']),
+                                    datetime.datetime.fromtimestamp(json_tree['dt']).strftime(u'%Y/%m/%d %H:%M:%S'))
             else:
                 self.ind.set_icon('weather-severe-alert')   # エラー時の「雨＋警報」アイコン
                 self.ind.set_label('--℃')
@@ -162,7 +186,7 @@ class WeatherIndicator:
 # 天気アイコンNoを、Gnomeアイコン名に変換するクラス
 class Weather:
     """Data object to parse weather data with unit conversion """
-
+    global STATION_ID, WEB_SERVICE
 # weather-indicator(GPL) の Weatherクラスのディクショナリ変数定義部分を流用
 # https://launchpad.net/weather-indicator
 
@@ -223,16 +247,40 @@ class Weather:
     # Available conditions by Weather.com condition code; same as Yahoo
     _WeathercomConditions = _YahooConditions
 
+    _OpenWeatherMapConditions = {
+        '01d' : ("weather-clear",             "weather-clear",            True,  "sky is clear"),
+        '01n' : ("weather-clear-night",       "weather-clear-night",      True,  "sky is clear"),
+        '02d' : ("weather-few-clouds",        "weather-few-clouds",       True,  "few clouds"),
+        '02n' : ("weather-few-clouds-night",  "weather-few-clouds-night", True,  "few clouds"),
+        '03d' : ("weather-clouds",            "weather-clouds",           True,  "scattered clouds"),
+        '03n' : ("weather-clouds-night",      "weather-clouds-night",     True,  "scattered clouds"),
+        '04d' : ("weather-clouds",            "weather-clouds",           True,  "broken clouds"),
+        '04n' : ("weather-clouds-night",      "weather-clouds-night",     True,  "broken clouds"),
+        '09d' : ("weather-showers",           "weather-showers",          True,  "shower rain"),
+        '09n' : ("weather-showers",           "weather-showers",          True,  "shower rain"),
+        '10d' : ("weather-showers-scattered", "weather-showers-scattered",True,  "Rain"),
+        '10n' : ("weather-showers-scattered", "weather-showers-scattered",True,  "Rain"),
+        '11d' : ("weather-storm",             "weather-storm",            True,  "Thunderstorm"),
+        '11n' : ("weather-storm",             "weather-storm",            True,  "Thunderstorm"),
+        '13d' : ("weather-snow",              "weather-snow",             True,  "snow"),
+        '13n' : ("weather-snow",              "weather-snow",             True,  "snow"),
+        '50d' : ("weather-fog",               "weather-fog",              True,  "mist"),
+        '50n' : ("weather-fog",               "weather-fog",              True,  "mist"),
+    }
+
     def __init__(self):
         return
 
     # 「天候icon番号」から、「Gnome Icon名」を得る関数
     # 引数 :  code = (str)天候icon番号, flag_night = 夜用のicon名を得る場合はTrue
     def get_icon_name(self, code, flag_night):
-        if flag_night == True:
-            return self._WeathercomConditions[code][1]
+        if WEB_SERVICE == 'WEATHER.COM' or WEB_SERVICE == 'YAHOO.COM':
+            if flag_night == True:
+                return self._WeathercomConditions[code][1]
+            else:
+                return self._WeathercomConditions[code][0]
         else:
-            return self._WeathercomConditions[code][0]
+            return self._OpenWeatherMapConditions[code][0]
 
 if __name__ == "__main__":
     indicator = WeatherIndicator()
