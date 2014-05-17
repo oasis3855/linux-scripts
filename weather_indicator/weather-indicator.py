@@ -9,11 +9,16 @@
 #
 # Version 0.1 (2014/05/11)
 # Version 0.2 (2014/05/12)
+# Version 0.3 (2014/05/17)
 
+import sys
 import pygtk
 pygtk.require('2.0')
 import gtk
 import datetime
+import os
+import ConfigParser
+import gobject
 import appindicator
 import pywapi       # Python天気API (yahoo.comとweather.com用)
                      # https://code.google.com/p/python-weather-api/
@@ -26,6 +31,10 @@ import json
 # Station ID of weather.com/yahoo.com (ex. Tokyo = JAXX0085, Osaka = JAXX0071, New York = USNY0996)
 # Station ID of OpenWeatherMap.org (ex. Tokyo = 1850147, Osaka = 1853909, New York = 5128638)
 STATION_ID = '1850147'
+# 環境省 大気汚染物質広域監視システム「そらまめ君」の観測値ID (ex 千代田区神田司町= 13101010, 国設大阪 = 27115010)
+SORAMAME_STATION_ID = '13101010'
+# 「そらまめ君」を受信する場合 True
+FLAG_SORAMAME_ENABLE = False
 # チェックする間隔（秒）
 CHECK_INTERVAL_SEC =  900    # sec
 # 接続先 (YAHOO.COM or WEATHER.COM or OPENWEATHERMAP.COM)
@@ -44,6 +53,9 @@ class WeatherIndicator:
         # コンテキストメニュー 設定
         self.menu_setup()
         self.ind.set_menu(self.menu)
+
+        # 設定ファイルの読み込み
+        self.config_file_read()
 
     #####
     # コンテキストメニュー 設定（クラスのコンストラクタから呼び出される）
@@ -75,6 +87,23 @@ class WeatherIndicator:
         breaker.show()
         self.menu.append(breaker)
 
+        # 設定表示部（「そらまめ君」用）
+        self.data3_item = gtk.MenuItem('---')
+        self.data3_item.set_sensitive(False)     # このメニューは選択できない
+        self.data3_item.show()
+        self.menu.append(self.data3_item)
+        # 仕切り線
+        breaker = gtk.SeparatorMenuItem()
+        breaker.show()
+        self.menu.append(breaker)
+
+        # 設定メニュー
+        self.config_item = gtk.ImageMenuItem("設定")
+        self.config_item.set_image(gtk.image_new_from_stock('gtk-preferences', gtk.ICON_SIZE_MENU))
+        self.config_item.connect("activate", self.menu_config_dialog)
+        self.config_item.show()
+        self.menu.append(self.config_item)
+
         # About表示メニュー
         self.show_about_item = gtk.MenuItem("このプログラムについて")
         self.show_about_item.connect("activate", self.menu_about_dlg)
@@ -82,7 +111,8 @@ class WeatherIndicator:
         self.menu.append(self.show_about_item)
 
         # 終了メニュー
-        self.quit_item = gtk.MenuItem("終了")
+        self.quit_item = gtk.ImageMenuItem("終了")
+        self.quit_item.set_image(gtk.image_new_from_stock('gtk-quit', gtk.ICON_SIZE_MENU))
         self.quit_item.connect("activate", self.menu_quit)
         self.quit_item.show()
         self.menu.append(self.quit_item)
@@ -106,6 +136,81 @@ class WeatherIndicator:
         gtk.main_quit()
 
     #####
+    # メニュー ： 設定ダイアログ
+    def menu_config_dialog(self, widget):
+        global STATION_ID, WEB_SERVICE, CHECK_INTERVAL_SEC, SORAMAME_STATION_ID, FLAG_SORAMAME_ENABLE
+        dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO, buttons=gtk.BUTTONS_OK_CANCEL, message_format='天気インジケータ')
+        dlg.format_secondary_text('天気データ取得方法を設定します')
+
+        dlg_content = dlg.get_content_area()
+        hbox_server = gtk.HBox()
+        hbox_server.add(gtk.Label('サーバ名'))
+        servers = ['YAHOO.COM', 'WEATHER.COM', 'OPENWEATHERMAP.COM']
+        list_server = gtk.ListStore(gobject.TYPE_STRING)
+        for item in servers:
+            list_server.append([item])
+        cell_server = gtk.CellRendererText()
+        combobox_server = gtk.ComboBox(list_server)
+        combobox_server.pack_start(cell_server, True)
+        combobox_server.add_attribute(cell_server, 'text', 0)
+        combobox_server.set_active(servers.index(WEB_SERVICE))
+        hbox_server.add(combobox_server)
+
+        hbox_stationid = gtk.HBox()
+        hbox_stationid.add(gtk.Label('観測地 ID'))
+        text_entry_stationid = gtk.Entry()
+        text_entry_stationid.set_width_chars(30)
+        text_entry_stationid.set_text(STATION_ID)
+        hbox_stationid.add(text_entry_stationid)
+
+        hbox_interval = gtk.HBox()
+        hbox_interval.add(gtk.Label('チエック周期（秒）'))
+        adj_interval = gtk.Adjustment(value=CHECK_INTERVAL_SEC, lower=600, upper=3600, step_incr=60)
+        hbox_interval.add(gtk.SpinButton(adj_interval, 0))
+
+        hbox_soramame = gtk.HBox()
+        check_soramame = gtk.CheckButton('環境省「そらまめ君」を受信する')
+        if(FLAG_SORAMAME_ENABLE == True):
+            check_soramame.set_active(True)
+        hbox_soramame.add(check_soramame)
+
+        hbox_soramameid = gtk.HBox()
+        hbox_soramameid.add(gtk.Label('そらまめ君 観測局 ID'))
+        text_entry_soramameid = gtk.Entry()
+        text_entry_soramameid.set_width_chars(20)
+        text_entry_soramameid.set_text(SORAMAME_STATION_ID)
+        hbox_soramameid.add(text_entry_soramameid)
+
+        dlg_content.add(hbox_server)
+        dlg_content.add(hbox_stationid)
+        dlg_content.add(hbox_interval)
+        dlg_content.add(hbox_soramame)
+        dlg_content.add(hbox_soramameid)
+        dlg.show_all()
+        ret = dlg.run()
+
+        text_server = combobox_server.get_active_text().decode('utf8')
+        text_stationid = text_entry_stationid.get_text().decode('utf8')
+        int_interval = int(adj_interval.get_value())
+        text_soramameid = text_entry_soramameid.get_text().decode('utf8')
+        flag_soramame = check_soramame.get_active()
+        dlg.destroy()
+
+        if ret == gtk.RESPONSE_OK:
+            WEB_SERVICE = text_server
+            STATION_ID = text_stationid
+            CHECK_INTERVAL_SEC = int_interval
+            if CHECK_INTERVAL_SEC < 600 or 3600 < CHECK_INTERVAL_SEC:
+                CHECK_INTERVAL_SEC = 900
+            SORAMAME_STATION_ID = text_soramameid
+            if(flag_soramame):
+                FLAG_SORAMAME_ENABLE = True
+            else:
+                FLAG_SORAMAME_ENABLE = False
+            self.config_file_write()
+            self.get_weather()
+
+    #####
     # メイン関数（タイマー設定を行う）
     def main(self):
         global CHECK_INTERVAL_SEC
@@ -118,7 +223,7 @@ class WeatherIndicator:
     #####
     # 天気データの受信と、パネルとコンテキストメニュー表示を更新
     def get_weather(self):
-        global STATION_ID, WEB_SERVICE
+        global STATION_ID, WEB_SERVICE, CHECK_INTERVAL_SEC
 
         try:
             weather_text = ''
@@ -181,7 +286,124 @@ class WeatherIndicator:
                 # コンテキストメニューのデータ表示部を更新
                 self.data_item.set_label("接続エラー\nネット接続:%s" % (datetime.datetime.now().strftime(u'%Y/%m/%d %H:%M:%S')))
 
+        self.data2_item.set_label("接続先:%s\n更新間隔(秒):%s\n場所ID:%s" % (WEB_SERVICE, str(CHECK_INTERVAL_SEC), STATION_ID))
+
+        self.get_soramamekun()
+
         return True
+
+    #####
+    # 環境省「そらまめ君」データの受信と、パネルとコンテキストメニュー表示を更新
+    def get_soramamekun(self):
+        global SORAMAME_STATION_ID, FLAG_SORAMAME_ENABLE
+
+        if(FLAG_SORAMAME_ENABLE != True):
+            return True
+
+        try:
+            url = 'http://www.obccbo.com/soramame/v1/weeks/' + SORAMAME_STATION_ID + '.json '
+            json_tree = json.loads( urllib.urlopen(url).read() )
+
+            # statusがOK以外、あるいはデータ個数が24以下の場合異常判定
+            if(str(json_tree['status']) != 'OK' or len(json_tree['data']) <= 24):
+                self.data_item.set_label('環境省データ：受信データ異常')
+                return True
+
+            # 最新のデータのインデックスを求める
+            i_new = 0
+            d_new = datetime.datetime(int(json_tree['data'][0]['year']), int(json_tree['data'][0]['month']),
+                    int(json_tree['data'][0]['day']), int(json_tree['data'][0]['time'][0:2]))
+            for i in range(len(json_tree['data'])):
+                # 大気汚染物質広域監視システムの時間表記が 01時〜24時であるため、0時から始まるよう修正
+                hour_tmp = int(json_tree['data'][i]['time'][0:2])
+                if hour_tmp >= 24:
+                    hour_tmp = 0
+                # datetime型に代入して、比較する（より新しいタイムスタンプのindexを取り出す）
+                d = datetime.datetime(int(json_tree['data'][i]['year']), int(json_tree['data'][i]['month']),
+                    int(json_tree['data'][i]['day']), hour_tmp)
+                if(d > d_new):
+                    d_new = d
+                    i_new = i
+
+            d = datetime.datetime(int(json_tree['data'][i_new]['year']), int(json_tree['data'][i_new]['month']),
+                    int(json_tree['data'][i_new]['day']), int(json_tree['data'][i_new]['time'][0:2]))
+
+            # データを読み出す
+            weather_text = "環境省「そらまめ君」\n観測局ID:%s\nデータ日時:%s\n気温:%s\n湿度:%s\n風速:%s\nPM2.5:%s\nNOx:%s\nSO2:%s\n光化学Ox:%s" % (
+                            SORAMAME_STATION_ID,
+                            d.strftime("%Y/%m/%d %H:%M:%S"),
+                            json_tree['data'][i_new]['temp'],
+                            json_tree['data'][i_new]['hum'],
+                            (json_tree['data'][i_new]['ws'] + ' (m/sec)'),
+                            (json_tree['data'][i_new]['pm2.5'] + ' (ug/m3)'),
+                            (json_tree['data'][i_new]['nox'] + ' (ppm)'),
+                            (json_tree['data'][i_new]['so2'] + ' (ppm)'),
+                            (json_tree['data'][i_new]['so2'] + ' (ppm)'))
+            self.data3_item.set_label(weather_text)
+            # Gnomeパネルの文字を更新（たとえば、PM2.5濃度を表示する場合）
+            self.ind.set_label(json_tree['data'][i_new]['temp'] + '℃  ' + json_tree['data'][i_new]['pm2.5'] + 'ug/m3')
+
+        except:
+            # コンテキストメニューのデータ表示部を更新
+            self.data3_item.set_label('環境省データ：接続エラー')
+
+        return True
+
+    #####
+    # 設定ファイルに書き込む
+    def config_file_write(self):
+        global STATION_ID, WEB_SERVICE, CHECK_INTERVAL_SEC, SORAMAME_STATION_ID, FLAG_SORAMAME_ENABLE
+        parser = ConfigParser.SafeConfigParser()
+        configfile = os.path.join(os.environ['HOME'], '.weather-indicator')
+
+        try:
+            fp = open(configfile, 'w')
+            parser.set("DEFAULT", "station_id", STATION_ID)
+            parser.set("DEFAULT", "web_service", WEB_SERVICE)
+            parser.set("DEFAULT", "interval_sec", str(CHECK_INTERVAL_SEC))
+            parser.set("DEFAULT", "soramame_station_id", SORAMAME_STATION_ID)
+            if FLAG_SORAMAME_ENABLE == True:
+                parser.set("DEFAULT", "soramame_flag", 'True')
+            else:
+                parser.set("DEFAULT", "soramame_flag", 'False')
+
+            parser.write(fp)
+            fp.close()
+        except IOError:
+            print >> sys.stderr, "config write error"
+
+    #####
+    # 設定ファイルから読み込む
+    def config_file_read(self):
+        global STATION_ID, WEB_SERVICE, CHECK_INTERVAL_SEC, SORAMAME_STATION_ID, FLAG_SORAMAME_ENABLE
+        parser = ConfigParser.SafeConfigParser({
+                'station_id' : STATION_ID,
+                'web_service' : WEB_SERVICE,
+                'interval_sec' : str(CHECK_INTERVAL_SEC),
+                'soramame_station_id' : SORAMAME_STATION_ID,
+                'soramame_flag' : 'True' if FLAG_SORAMAME_ENABLE != True else 'False'
+            })
+        configfile = os.path.join(os.environ['HOME'], '.weather-indicator')
+
+        try:
+            fp = open(configfile, 'r')
+            parser.readfp(fp)
+            fp.close()
+            STATION_ID = parser.get("DEFAULT", "station_id")
+            WEB_SERVICE = parser.get("DEFAULT", "web_service")
+            CHECK_INTERVAL_SEC = int(parser.get("DEFAULT", "interval_sec"))
+            # CHECK_INTERVAL_SEC : from 1min to 30min, default 5min
+            if CHECK_INTERVAL_SEC < 600 or 3600 < CHECK_INTERVAL_SEC:
+                CHECK_INTERVAL_SEC = 900
+            SORAMAME_STATION_ID = parser.get("DEFAULT", "soramame_station_id")
+            flag = parser.get("DEFAULT", "soramame_flag")
+            FLAG_SORAMAME_ENABLE = True if flag == 'True' else  False
+        except:
+            # 設定ファイルが読み込めない場合、書き込みを行う（新規作成の時を意図）
+            print >> sys.stderr, "config file error (not found or syntax error)"
+            self.config_file_write()
+            return
+
 
 # 天気アイコンNoを、Gnomeアイコン名に変換するクラス
 class Weather:
