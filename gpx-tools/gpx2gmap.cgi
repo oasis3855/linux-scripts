@@ -43,7 +43,9 @@ my $str_html_width = '650';
 my $str_html_height = '480';
 my $str_html_icon = 'http://labs.google.com/ridefinder/images/mm_20_white.png';
 my $str_html_color = 'blue';
-
+my $int_max_uploadsize = 300*1024;    # CSVファイルの最大アップロードサイズ
+my $flag_add_marker = 1;              # Web出力でmarkerを描画
+my $flag_add_line = 1;                # Web出力でlineを描画
 
 {
     my $str_tempfile = './data/upload.dat';   # アップロード時の一時ファイル名
@@ -51,9 +53,17 @@ my $str_html_color = 'blue';
     my $str_file_ext = '';      # アップロードされたファイルの拡張子
 
     my $q = new CGI;
-    print $q->header(-type=>'text/html', -charset=>'utf-8');
 
     if(defined($q->param('uploadfile')) && length($q->param('uploadfile'))>0){
+        # 結果のダウンロード／画面出力 ヘッダ出力を行う
+        if(defined($q->param('export_to_file')) && length($q->param('export_to_file'))>0 &&
+                $q->param('export_to_file') eq 'enable'){
+            print "Content-Type: application/download\n";
+            print "Content-Disposition: attachment; filename=\"output.html.txt\"\n\n";
+        }
+        else{
+            print $q->header(-type=>'text/html', -charset=>'utf-8');
+        }
         # ファイルアップロード処理
         if(my $str_error = sub_upload_file(\$q, $str_tempfile, \$str_file_ext)){
             print $q->start_html(-title=>"Error",-lang=>'ja-JP');
@@ -73,14 +83,14 @@ my $str_html_color = 'blue';
             }
         }
         # CSVデータをGoogleMaps API htmlに変換し、一時保存ファイルに保存
-        if(my $str_error = sub_csv_to_gmap($str_tempfile, $str_outputfile)){
+        if(my $str_error = sub_csv_to_gmap(\$q, $str_tempfile, $str_outputfile)){
             print $q->start_html(-title=>"Error",-lang=>'ja-JP');
             print("<p>sub_csv_to_gmap error :".$str_error."</p>\n");
             sub_print_returnlink();
             print $q->end_html;
             exit;
         }
-            # 結果の画面表示
+        # 結果の画面表示
         if(my $str_error = sub_output_result($str_outputfile)){
             print $q->start_html(-title=>"Error",-lang=>'ja-JP');
             print("<p>sub_output_result error :".$str_error."</p>\n");
@@ -90,6 +100,7 @@ my $str_html_color = 'blue';
         }
     }
     else{
+        print $q->header(-type=>'text/html', -charset=>'utf-8');
         print $q->start_html(-title=>"アップロードファイルの選択",-lang=>'ja-JP');
         sub_disp_upload_filepick();
     }
@@ -103,12 +114,16 @@ my $str_html_color = 'blue';
 # CSVファイルアップロードのためのファイル選択画面
 sub sub_disp_upload_filepick{
     my $str_this_script = basename($0);             # このスクリプト自身のファイル名
-    print("<p>GPSトラックログを含むデータファイルのアップロード</p>\n".
+    print("<p>GPSトラックログをWebページ上のGoogleMapsに埋め込むコードを作成</p>\n".
             "<p>&nbsp;</p>\n".
             "<form method=\"post\" action=\"$str_this_script\" enctype=\"multipart/form-data\">\n".
-            "GPX/CSVファイル\n".
-            "<p><input type=\"file\" name=\"uploadfile\" value=\"\" size=\"20\" />\n".
-            "<input type=\"submit\" value=\"アップロード\" /></p>\n".
+            "GPX/CSVファイルを指定します<br/>\n".
+            "&nbsp;&nbsp;<input type=\"file\" name=\"uploadfile\" value=\"\" size=\"20\" />（最大サイズ ".($int_max_uploadsize/1024)." kBytes）<br />\n".
+            "&nbsp;&nbsp;<input type=\"checkbox\" name=\"add_marker\" value=\"enable\" ".($flag_add_marker == 1 ? "checked=\"checked\"" : '')." />Markerを出力\n".
+            "&nbsp;&nbsp;<input type=\"checkbox\" name=\"add_line\" value=\"enable\" ".($flag_add_line == 1 ? "checked=\"checked\"" : '')." />Polylineを出力\n".
+            "&nbsp;&nbsp;<input type=\"checkbox\" name=\"export_to_file\" value=\"enable\"  />ファイルに出力<br/>\n".
+            "&nbsp;&nbsp;Marker出力ステップ<input type=\"text\" name=\"marker_step\" value=\"1\" size=\"3\" /> (1は１つ毎＝全て描画を意味する) <br />\n".
+            "<input type=\"submit\" value=\"アップロード\" />\n".
             "</form>\n");
 }
 
@@ -145,10 +160,10 @@ sub sub_upload_file{
 
     unless( -f $str_tempfile ){ return("temp file create error"); }
     
-    # ファイルサイズが100kBytesを超えればエラー
-    if( -s $str_tempfile < 1 || -s $str_tempfile > 100000){
+    # ファイルサイズが設定値を超えればエラー
+    if( -s $str_tempfile < 1 || -s $str_tempfile > $int_max_uploadsize){
         unlink($str_tempfile);
-        return('upload file size exceed 100KiB');
+        return('upload file size exceed '.($int_max_uploadsize/1024).'kBytes');
     }
     # テキストファイルかどうかを判定
     if(sub_test_file($str_tempfile) != 1){
@@ -201,6 +216,7 @@ sub sub_gpx_to_csv {
 # 一時ファイルのCSVを読み込んで、GoogleMap API htmlに変換
 sub sub_csv_to_gmap {
     # 引数
+    my $q_ref = shift;
     my $str_csvfile = shift;
     my $str_outputfile = shift;
 
@@ -301,36 +317,48 @@ sub sub_csv_to_gmap {
         " var myMap = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);\n",
         $latitude_centre, $longitude_centre);
 
+    my $int_marker_step = 1;
+    if(defined($$q_ref->param('marker_step')) && length($$q_ref->param('marker_step'))>0 &&
+        $$q_ref->param('marker_step')>=1 && $$q_ref->param('marker_step')<=1000){
+            $int_marker_step = int($$q_ref->param('marker_step'));
+    }
     # 地点マーカーと吹出し
-    for(my $i=0; $i<$#arr_data; $i++){
-        my ($sec,$min,$hour,$mday,$month,$year,$wday,$stime) = localtime($arr_data[$i][0]);
-        my $str_date = sprintf("%04d/%02d/%02d %02d:%02d:%02d", $year+1900,$month+1,$mday,$hour,$min,$sec);
-        printf(FH " var marker%d = new google.maps.Marker({\n".
-            "  map: myMap,\n".
-            "  position: new google.maps.LatLng(%s,%s),\n".
-            "  icon: \"".$str_html_icon."\",\n".
-            "  title: \"time %s\",\n".
-            " });\n", $i, $arr_data[$i][1],$arr_data[$i][2], $str_date);
-            printf(FH " var infowindow%d = new google.maps.InfoWindow({\n".
-            '  content: "日時 %s<br/>緯度 %s<br/>経度 %s<br/>高度 %s m",'."\n".
-            " });\n".
-            " google.maps.event.addListener(marker%d, 'click', function() {\n".
-            "  infowindow%d.open(myMap, marker%d);\n".
-            " });\n",$i, $str_date, $arr_data[$i][1], $arr_data[$i][2], $arr_data[$i][3], $i, $i, $i);
+    if(defined($$q_ref->param('add_marker')) && length($$q_ref->param('add_marker'))>0 &&
+                        $$q_ref->param('add_marker') eq 'enable'){
+        for(my $i=0; $i<$#arr_data; $i++){
+            if($i%$int_marker_step && $i!=$#arr_data-1){ next; }
+            my ($sec,$min,$hour,$mday,$month,$year,$wday,$stime) = localtime($arr_data[$i][0]);
+            my $str_date = sprintf("%04d/%02d/%02d %02d:%02d:%02d", $year+1900,$month+1,$mday,$hour,$min,$sec);
+            printf(FH " var marker%d = new google.maps.Marker({\n".
+                "  map: myMap,\n".
+                "  position: new google.maps.LatLng(%s,%s),\n".
+                "  icon: \"".$str_html_icon."\",\n".
+                "  title: \"time %s\",\n".
+                " });\n", $i, $arr_data[$i][1],$arr_data[$i][2], $str_date);
+                printf(FH " var infowindow%d = new google.maps.InfoWindow({\n".
+                '  content: "日時 %s<br/>緯度 %s<br/>経度 %s<br/>高度 %s m",'."\n".
+                " });\n".
+                " google.maps.event.addListener(marker%d, 'click', function() {\n".
+                "  infowindow%d.open(myMap, marker%d);\n".
+                " });\n",$i, $str_date, $arr_data[$i][1], $arr_data[$i][2], $arr_data[$i][3], $i, $i, $i);
+        }
     }
 
     # 地点の間を結ぶ線
-    print(FH " var polyline1 = new google.maps.Polyline({\n".
-        "  map: myMap,\n".
-        "  path: [\n");
-    for(my $i=0; $i<$#arr_data; $i++){
-        printf(FH "   new google.maps.LatLng(%s,%s),\n", $arr_data[$i][1],$arr_data[$i][2]);
+    if(defined($$q_ref->param('add_line')) && length($$q_ref->param('add_line'))>0 &&
+                        $$q_ref->param('add_line') eq 'enable'){
+        print(FH " var polyline1 = new google.maps.Polyline({\n".
+            "  map: myMap,\n".
+            "  path: [\n");
+        for(my $i=0; $i<$#arr_data; $i++){
+            printf(FH "   new google.maps.LatLng(%s,%s),\n", $arr_data[$i][1],$arr_data[$i][2]);
+        }
+        print(FH "  ],\n".
+            "  strokeColor: \"".$str_html_color."\",\n".
+            "  strokeOpacity: 0.5,\n".
+            "  strokeWeight: 3,\n".
+            " });\n");
     }
-    print(FH "  ],\n".
-        "  strokeColor: \"".$str_html_color."\",\n".
-        "  strokeOpacity: 0.5,\n".
-        "  strokeWeight: 3,\n".
-        " });\n");
 
 
     print(FH " }\n".
