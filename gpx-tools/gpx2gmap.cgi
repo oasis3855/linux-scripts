@@ -507,7 +507,8 @@ sub sub_csv_to_gmap {
         . " zoom: " . $gmap_zoom . ",\n"
         . " center: new google.maps.LatLng(%f,%f),\n"
 #        . " mapTypeId: google.maps.MapTypeId." . $param_maptype . "\n"
-        . " mapTypeId: '" . $param_maptype . "'\n"
+        . " mapTypeId: '" . $param_maptype . "',\n"
+        . " gestureHandling: 'greedy',  /* enable zoom in/out by mouse wheel */\n"
         . " };\n"
         . " var myMap = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);\n\n\n",
         $latitude_centre, $longitude_centre);
