@@ -5,6 +5,10 @@
 # Software name :
 #   gpx2gmap.cgi : GPX/CSVをGoogleMap APIを用いたHTMLファイルにコンバートする
 #
+#   Version 1.0     2011/October/29
+#   Version 1.1     2015/November/13
+#   Version 1.2     2018/October/13
+#
 # Copyright (C) INOUE Hirokazu, All Rights Reserved
 #     http://oasis.halfmoon.jp/
 #
@@ -35,38 +39,128 @@ use File::Basename;
 use File::Copy;
 use HTTP::Date;
 use XML::Simple;
+use Encode;
 
 binmode(STDOUT, ":utf8");
 binmode(STDERR, ":utf8");
 
-my $str_html_width = '650';
-my $str_html_height = '480';
+my $str_this_script = basename($0);             # このスクリプト自身のファイル名
+
+my $param_size_width = 50;
+my $param_size_height = 480;
+my $param_unit_width = '%';
+my $param_unit_height = 'px';
+my $param_maptype = 'roadmap';
 my $str_html_icon = 'http://labs.google.com/ridefinder/images/mm_20_white.png';
 my $str_html_color = 'blue';
 my $int_max_uploadsize = 300*1024;    # CSVファイルの最大アップロードサイズ
 my $flag_add_marker = 1;              # Web出力でmarkerを描画
 my $flag_add_line = 1;                # Web出力でlineを描画
+my $param_key = '';
+my $param_server = 'maps.googleapis.com';
+my $param_init = 'callback';
+
 
 {
-    my $str_tempfile = './data/upload.dat';   # アップロード時の一時ファイル名
-    my $str_outputfile = './data/output.dat';   # 出力結果を一時的に格納するファイル名
+    my $str_tempfile = './data/upload.dat';       # アップロード時の一時ファイル名
+    my $str_outputfile = './data/output.dat';     # 出力結果を一時的に格納するファイル名
+    my $str_jsfile = './data/output.js';          # 出力結果を一時的に格納するファイル名
     my $str_file_ext = '';      # アップロードされたファイルの拡張子
 
     my $q = new CGI;
 
+    # このスクリプトのソースコードを表示して終了する
+    if(defined($q->param('showsrc'))){
+        sub_show_src();
+        exit;
+    }
+
+    # 引数を解析し、内部変数に格納する
+    if(defined($q->param('uploadfile')) && length($q->param('uploadfile'))>0){
+        if(defined($q->param('add_marker')) && length($q->param('add_marker'))>0 &&
+                            $q->param('add_marker') eq 'enable'){
+            $flag_add_marker = 1;
+        }
+        else { $flag_add_marker = 0; }
+
+        if(defined($q->param('add_line')) && length($q->param('add_line'))>0 &&
+                            $q->param('add_line') eq 'enable'){
+            $flag_add_line = 1;
+        }
+        else { $flag_add_line = 0; }
+    }
+
+    if ( defined( $q->param('size_height') ) ) {
+        $param_size_height = $q->param('size_height') + 0;
+        if($param_size_height < 1 || $param_size_height > 1920){ $param_size_height = 640; }
+    }
+    if ( defined( $q->param('size_height') ) ) {
+        $param_size_height = $q->param('size_height');
+        if( decode_num_param(\$param_size_height, '%', 5, 100, 50) ) {
+            $param_unit_height = '%';
+        }
+        elsif( decode_num_param(\$param_size_height, 'px', 100, 1920, 640) ) {
+            $param_unit_height = 'px';
+        }
+        else {
+            decode_num_param(\$param_size_height, '', 100, 1920, 640);
+            $param_unit_height = 'px';
+        }
+    }
+    if ( defined( $q->param('size_width') ) ) {
+        $param_size_width = $q->param('size_width');
+        if( decode_num_param(\$param_size_width, '%', 5, 100, 50) ) {
+            $param_unit_width = '%';
+        }
+        elsif( decode_num_param(\$param_size_width, 'px', 100, 1920, 640) ) {
+            $param_unit_width = 'px';
+        }
+        else {
+            decode_num_param(\$param_size_width, '', 100, 1920, 640);
+            $param_unit_width = 'px';
+        }
+    }
+
+    if ( defined( $q->param('maptype') ) ) {
+        $param_maptype = trim_space_tab($q->param('maptype'));
+        if($param_maptype ne 'roadmap' && $param_maptype ne 'satellite'
+            && $param_maptype ne 'hybrid' && $param_maptype ne 'terrain'){ $param_maptype = 'roadmap'; }
+    }
+
+
+    if ( defined( $q->param('key') ) ) {
+        $param_key = trim_space_tab($q->param('key'));
+        if(!check_string_alphanum($param_key)) { $param_key = ''; }
+    }
+
+    if ( defined( $q->param('server') ) ) {
+        $param_server = trim_space_tab($q->param('server'));
+        if($param_server ne 'maps.googleapis.com' && $param_server ne 'maps.google.cn'
+            && $param_server ne 'maps.google.com'){ $param_server = 'maps.googleapis.com'; }
+    }
+
+    if ( defined( $q->param('init') ) ) {
+        $param_init = trim_space_tab($q->param('init'));
+        if($param_init ne 'callback' && $param_init ne 'window.onload'){ $param_server = 'callback'; }
+    }
+
+    my $flag_download_mode = 0;
     if(defined($q->param('uploadfile')) && length($q->param('uploadfile'))>0){
         # 結果のダウンロード／画面出力 ヘッダ出力を行う
         if(defined($q->param('export_to_file')) && length($q->param('export_to_file'))>0 &&
                 $q->param('export_to_file') eq 'enable'){
             print "Content-Type: application/download\n";
-            print "Content-Disposition: attachment; filename=\"output.html.txt\"\n\n";
+            print "Content-Disposition: attachment; filename=\"MY_DRAWING_DATA.js\"\n\n";
+            $flag_download_mode = 1;
         }
         else{
-            print $q->header(-type=>'text/html', -charset=>'utf-8');
+            # HTML出力開始（ヘッダ）
+            sub_print_start_html( \$q );
+            # GPX/CSVファイルアップロードのためのファイル選択画面
+            sub_disp_upload_filepick();
         }
         # ファイルアップロード処理
         if(my $str_error = sub_upload_file(\$q, $str_tempfile, \$str_file_ext)){
-            print $q->start_html(-title=>"Error",-lang=>'ja-JP');
             print("<p>sub_upload_csv error :".$str_error."</p>\n");
             sub_print_returnlink();
             print $q->end_html;
@@ -75,56 +169,136 @@ my $flag_add_line = 1;                # Web出力でlineを描画
         # GPXファイルの場合、CSVデータに変換する
         if($str_file_ext eq '.gpx'){
             if(my $str_error = sub_gpx_to_csv($str_tempfile)){
-                print $q->start_html(-title=>"Error",-lang=>'ja-JP');
                 print("<p>sub_gpx_to_csv error :".$str_error."</p>\n");
                 sub_print_returnlink();
                 print $q->end_html;
                 exit;
             }
         }
+        # htmlファイル中の Maps JavaScript API 呼び出し部分を構築する
+        my $str_script_call_html_code = '';
+        sub_compose_script_call(\$str_script_call_html_code);
         # CSVデータをGoogleMaps API htmlに変換し、一時保存ファイルに保存
-        if(my $str_error = sub_csv_to_gmap(\$q, $str_tempfile, $str_outputfile)){
-            print $q->start_html(-title=>"Error",-lang=>'ja-JP');
+        if(my $str_error = sub_csv_to_gmap(\$q, $str_tempfile, $str_outputfile, $str_jsfile, $str_script_call_html_code)){
             print("<p>sub_csv_to_gmap error :".$str_error."</p>\n");
             sub_print_returnlink();
             print $q->end_html;
             exit;
         }
-        # 結果の画面表示
-        if(my $str_error = sub_output_result($str_outputfile)){
-            print $q->start_html(-title=>"Error",-lang=>'ja-JP');
+        # 結果の画面表示（サンプルHTMLコードの表示）
+        if($flag_download_mode == 0) {
+            my $str_code_escape = $str_script_call_html_code;
+            $str_script_call_html_code =~ s/[&]/&amp;/g;
+            $str_script_call_html_code =~ s/</&lt;/g;
+            $str_script_call_html_code =~ s/>/&gt;/g;
+            print(
+                '<pre class="command_box">' . "\n"
+                . $str_script_call_html_code . "\n"
+                . '&lt;script type="text/javascript" src="MY_DRAWING_DATA.js"&gt;&lt;/script&gt;' . "\n"
+                .'</pre>' . "\n"
+            );
+        }
+        # 結果の画面表示（マップ領域HTMLコード）
+        if($flag_download_mode == 0) {
+            if(my $str_error = sub_output_result($str_outputfile)){
+                print("<p>sub_output_result error :".$str_error."</p>\n");
+                sub_print_returnlink();
+                print $q->end_html;
+                exit;
+            }
+        }
+        else {
+            delete_temp_file($str_outputfile);
+        }
+        # 結果の画面表示（マップ領域インラインJavaScriptコード）
+        if(my $str_error = sub_output_result($str_jsfile)){
             print("<p>sub_output_result error :".$str_error."</p>\n");
             sub_print_returnlink();
             print $q->end_html;
             exit;
         }
+        # 結果の画面表示（マップ領域HTMLコード）
+        if($flag_download_mode == 0) {
+            print("\n\n".
+                    "-->\n".
+                    "</script>\n");
+        }
     }
     else{
-        print $q->header(-type=>'text/html', -charset=>'utf-8');
-        print $q->start_html(-title=>"アップロードファイルの選択",-lang=>'ja-JP');
+        # HTML出力開始（ヘッダ）
+        sub_print_start_html( \$q );
+        # GPX/CSVファイルアップロードのためのファイル選択画面
         sub_disp_upload_filepick();
     }
-    sub_print_returnlink();
+    if($flag_download_mode == 0) {
+        sub_print_returnlink();
 
-    print $q->end_html;
-
+        print $q->end_html;
+    }
 
 }
 
-# CSVファイルアップロードのためのファイル選択画面
+# GPX/CSVファイルアップロードのためのファイル選択画面
 sub sub_disp_upload_filepick{
-    my $str_this_script = basename($0);             # このスクリプト自身のファイル名
-    print("<p>GPSトラックログをWebページ上のGoogleMapsに埋め込むコードを作成</p>\n".
-            "<p>&nbsp;</p>\n".
-            "<form method=\"post\" action=\"$str_this_script\" enctype=\"multipart/form-data\">\n".
-            "GPX/CSVファイルを指定します<br/>\n".
-            "&nbsp;&nbsp;<input type=\"file\" name=\"uploadfile\" value=\"\" size=\"20\" />（最大サイズ ".($int_max_uploadsize/1024)." kBytes）<br />\n".
-            "&nbsp;&nbsp;<input type=\"checkbox\" name=\"add_marker\" value=\"enable\" ".($flag_add_marker == 1 ? "checked=\"checked\"" : '')." />Markerを出力\n".
-            "&nbsp;&nbsp;<input type=\"checkbox\" name=\"add_line\" value=\"enable\" ".($flag_add_line == 1 ? "checked=\"checked\"" : '')." />Polylineを出力\n".
-            "&nbsp;&nbsp;<input type=\"checkbox\" name=\"export_to_file\" value=\"enable\"  />ファイルに出力<br/>\n".
-            "&nbsp;&nbsp;Marker出力ステップ<input type=\"text\" name=\"marker_step\" value=\"1\" size=\"3\" /> (1は１つ毎＝全て描画を意味する) <br />\n".
-            "<input type=\"submit\" value=\"アップロード\" />\n".
-            "</form>\n");
+    print("<p>Google Cloud Platform : Maps JavaScript API code builder</p>\n\n"
+        . "<p>\n"
+        . '  <a target="new" href="https://developers.google.com/maps/documentation/javascript/tutorial?hl=ja">Maps JavaScript API : Overview</a>,' . "\n"
+        . '  &nbsp;&nbsp;&nbsp;<a target="new" href="https://developers.google.com/maps/documentation/javascript/reference/?hl=ja">Reference </a>,' . "\n"
+        . '  &nbsp;&nbsp;&nbsp;[&nbsp;<a target="new" href="https://console.cloud.google.com/">open Console</a>&nbsp;],' . "\n"
+        . '  &nbsp;&nbsp;&nbsp;<a href="' . $str_this_script . '?showsrc=true">このプログラムのソースコードを表示する</a>' . "\n"
+        ."</p>\n\n"
+        );
+    print("<!-- API引数のフォーム入力 -->\n"
+        . '<form method="post" action="' . $str_this_script . '" enctype="multipart/form-data">' ."\n"
+        . '  <table class="input_box">' . "\n"
+        . '    <tr><td>GPX/CSVファイル</td><td>'
+        . '<input type="file" name="uploadfile" value="" accept=".gpx, .csv" size="20" />'
+        . '（最大サイズ ' . ($int_max_uploadsize/1024) . ' kBytes）</td></tr>' . "\n"
+        . '    <tr><td></td><td><input type="checkbox" name="add_marker" value="enable" '
+        . ($flag_add_marker == 1 ? 'checked="checked"' : '') . ' />Markerを出力'
+        . '&nbsp;&nbsp;<input type="checkbox" name="add_line" value="enable" '
+        . ($flag_add_line == 1 ? 'checked="checked"' : '') . ' />Polylineを出力</td></tr>' . "\n"
+
+        . '    <tr><td>画像サイズ : size = </td><td><input type="text" name="size_width" size="5" value="'
+        . $param_size_width . ( $param_unit_width eq '%' ? '%' : '' )
+        . '" /> x <input type="text" name="size_height" size="5" value="'
+        . $param_size_height . ( $param_unit_height eq '%' ? '%' : '' )
+        . "\" />（横x縦）最大 1920x1920 または 0%-100%</td></tr>\n"
+
+        . "    <tr><td>地図の種類 : maptype = </td><td>\n"
+        . '      <select name="maptype">' . "\n"
+        . '      <option value="roadmap">roadmap (デフォルト値)</option>' . "\n"
+        . '      <option value="satellite"' . ($param_maptype eq 'satellite' ? ' selected ' : '') . '>satellite</option>' . "\n"
+        . '      <option value="hybrid"' . ($param_maptype eq 'hybrid' ? ' selected ' : '') . '>hybrid</option>' . "\n"
+        . '      <option value="terrain"' . ($param_maptype eq 'terrain' ? ' selected ' : '') . '>terrain</option>' . "\n"
+        . "      </select>\n"
+        . "    </td></tr>\n"
+
+        . '    <tr><td>Marker出力ステップ</td><td>'
+        . '<input type="text" name="marker_step" value="1" size="3" /> (1は１つ毎＝全て描画を意味する)</td></tr>' . "\n"
+
+        . '    <tr><td>API Key = </td><td><input type="text" name="key" size="40" value="'
+        . $param_key . "\" /><br />（Console - menu - APIとサービス - Maps Static API - 認証情報よりキーを貼り付ける）</td></tr>\n"
+
+        . "    <tr><td>サーバ</td><td>\n"
+        . '      <select name="server">' . "\n"
+        . '      <option value="maps.googleapis.com">maps.googleapis.com (デフォルト値)</option>' . "\n"
+        . '      <option value="maps.google.cn"' . ($param_server eq 'maps.google.cn' ? ' selected ' : '') . '>maps.google.cn</option>' . "\n"
+        . '      <option value="maps.google.com"' . ($param_server eq 'maps.google.com' ? ' selected ' : '') . '>maps.google.com</option>' . "\n"
+        . "      </select>\n"
+        . "    </td></tr>\n"
+
+        . "    <tr><td>JavaScript起動方法</td><td>\n"
+        . '      <select name="init">' . "\n"
+        . '      <option value="callback">callback (デフォルト値)</option>' . "\n"
+        . '      <option value="window.onload"' . ($param_init eq 'window.onload' ? ' selected ' : '') . '>window.onload</option>' . "\n"
+        . "      </select>\n"
+        . "    </td></tr>\n"
+
+        . '    <tr><td colspan="2"><input type="submit" value="アップロード" />'
+        . '&nbsp;&nbsp;&nbsp;<input type="checkbox" name="export_to_file" value="enable" />Java Scriptをファイルに出力</td></tr>' . "\n"
+        . "  </table>\n"
+        . "</form>\n");
 }
 
 sub sub_print_returnlink {
@@ -213,12 +387,28 @@ sub sub_gpx_to_csv {
     return;
 }
 
+# htmlファイル中の Maps JavaScript API 呼び出し部分を構築する
+sub sub_compose_script_call {
+    my $str = shift;
+    $$str = sprintf(
+        '<script type="text/javascript" src="http://' . $param_server . '/maps/api/js?'
+        . ($param_init eq 'callback' ? 'callback=initMap' : '' )
+        . ($param_key ne '' ? '&key='.$param_key : '' )
+        . '"' . ($param_init eq 'callback' ? ' async defer' : '' )
+        . '></script>' ."\n"
+        . "<div id=\"map_canvas\" style=\"width:" . $param_size_width . $param_unit_width
+        . "; height:" . $param_size_height . $param_unit_height . ";background-color: #f4f2e9;\"></div>\n"
+        . "<div class=\"clear\"></div>\n");
+}
+
 # 一時ファイルのCSVを読み込んで、GoogleMap API htmlに変換
 sub sub_csv_to_gmap {
     # 引数
     my $q_ref = shift;
     my $str_csvfile = shift;
     my $str_outputfile = shift;
+    my $str_jsfile = shift;
+    my $str_script_call_html_code = shift;
 
     my @arr_data;   # トラックポイント（時間、緯度経度、高度）のセットを格納する配列
 
@@ -295,26 +485,31 @@ sub sub_csv_to_gmap {
     elsif($disp_angle < 2.7){ $gmap_zoom = '8'; }
     elsif($disp_angle < 5.4){ $gmap_zoom = '7'; }
 
-    # 出力用の一時ファイルに書き込む
+    # HTML部分を出力用の一時ファイルに書き込む
     open(FH, ">".$str_outputfile) or return('temp output file open error');
     binmode(FH, ":utf8");
-    printf(FH "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"".
-        "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n".
-        "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"ja\" lang=\"ja\" dir=\"ltr\">\n".
-        "<head>\n".
-        "<title>GPS tracking route on GoogleMaps</title>\n".
-        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n".
-        "<script type=\"text/javascript\" src=\"http://maps.google.com/maps/api/js?sensor=false\"></script>\n".
-        "<script type=\"text/javascript\">\n".
-        "<!--\n".
-        " window.onload = initialize;\n".
-        " function initialize() {\n".
-        " var myOptions = {\n".
-        " zoom: ".$gmap_zoom.",\n".
-        " center: new google.maps.LatLng(%f,%f),\n".
-        " mapTypeId: google.maps.MapTypeId.ROADMAP\n".
-        " };\n".
-        " var myMap = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);\n",
+    printf(FH 
+        $str_script_call_html_code
+        . "<script type=\"text/javascript\">\n"
+        . "<!--\n\n");
+
+
+    close(FH);
+
+
+    # Java Script部分を出力用の一時ファイルに書き込む
+    open(FH, ">".$str_jsfile) or return('temp(js) output file open error');
+    binmode(FH, ":utf8");
+    printf(FH "/* Google Cloud Platform : Maps JavaScript API , route plotting map source code */"
+        . ($param_init eq 'window.onload' ? '  window.onload = initMap;' : '' ) . "\n"
+        . "function initMap() {\n"
+        . " var myOptions = {\n"
+        . " zoom: " . $gmap_zoom . ",\n"
+        . " center: new google.maps.LatLng(%f,%f),\n"
+#        . " mapTypeId: google.maps.MapTypeId." . $param_maptype . "\n"
+        . " mapTypeId: '" . $param_maptype . "'\n"
+        . " };\n"
+        . " var myMap = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);\n\n\n",
         $latitude_centre, $longitude_centre);
 
     my $int_marker_step = 1;
@@ -342,6 +537,7 @@ sub sub_csv_to_gmap {
                 "  infowindow%d.open(myMap, marker%d);\n".
                 " });\n",$i, $str_date, $arr_data[$i][1], $arr_data[$i][2], $arr_data[$i][3], $i, $i, $i);
         }
+        print(FH "\n\n");
     }
 
     # 地点の間を結ぶ線
@@ -360,15 +556,10 @@ sub sub_csv_to_gmap {
             " });\n");
     }
 
-
-    print(FH " }\n".
-        "//-->\n".
-        "</script>\n".
-        "</head>\n".
-        "<body>\n".
-        "<div id=\"map_canvas\" style=\"width:".$str_html_width."px; height:".$str_html_height."px;\"></div>\n<div class=\"clear\"></div>\n");
-
+    print(FH "\n\n}\n\n");
+    
     close(FH);
+
     
     return;
 }
@@ -395,6 +586,13 @@ sub sub_output_result {
     unlink($str_outputfile);
 
     return;
+}
+
+sub delete_temp_file {
+    my $str_outputfile = shift;
+    # 一時ファイルを削除する
+    unlink($str_outputfile);
+
 }
 
 # CSV/GPX形式のテキストファイルか、中身をチェック
@@ -425,3 +623,97 @@ sub sub_test_file {
     }
     close(FH);
 }
+
+# htmlを開始する
+sub sub_print_start_html {
+    my $q_ref = shift;    # CGIオブジェクト
+    print( $$q_ref->header( -type => 'text/html', -charset => 'utf-8' ) );
+    print( $$q_ref->start_html(
+                   -title => "Maps JavaScript API code builder",
+                   -dtd   => [
+                       '-//W3C//DTD XHTML 1.0 Transitional//EN',
+                       'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'
+                   ],
+                   -lang  => 'ja-JP',
+                   -style => { 'src' => 'style.css' } ) );
+}
+
+# アルファベット、数字、"+-_" だけで文字列が構成される場合は 1
+sub check_string_alphanum {
+    my $str = shift || return(undef);
+    if( $str =~ /^[a-zA-Z0-9\-\+_]{1,}$/ ){
+        return(1);
+    }
+    # 英数字以外が含まれる
+    else{
+        return(0);
+    }
+}
+
+# 数字だけで文字列が構成される場合は 1
+sub check_string_num {
+    my $str = shift || return(undef);
+    if( $str =~ /^[0-9]{1,}$/ ){
+        return(1);
+    }
+    # 数字以外が含まれる
+    else{
+        return(0);
+    }
+}
+
+# 文字列前後の空白とタブ文字を削除
+sub trim_space_tab {
+    my $str = shift;
+    $str =~ s/^\s*(.*?)\s*$/$1/;
+    return $str;
+}
+
+# 単位付きの数値文字列を汚染除去・範囲内チェックを行う
+sub decode_num_param {
+    my ($ref_str, $suffix, $min, $max, $default) = @_;
+    # 単位($suffix)が指定されている場合
+    if( $suffix ne '' && $$ref_str =~ /^[0-9]+$suffix$/ ) {
+        # 末尾の[$suffix]を削除
+        $$ref_str = substr($$ref_str, 0, length($$ref_str)-length($suffix));
+        # 文字列 → 数値 （汚染除去）
+        if( check_string_num($$ref_str) != 1 ) { $$ref_str = $default; }
+        $$ref_str = $$ref_str + 0;
+        # 範囲外を除去
+        if( $$ref_str < $min || $max < $$ref_str ) { $$ref_str = $default; }
+        return 1;
+    }
+    # 単位($suffix)が指定されていない場合
+    elsif( $suffix eq '' ) {
+        # 文字列 → 数値 （汚染除去）
+        if( check_string_num($$ref_str) != 1 ) { $$ref_str = $default; }
+        $$ref_str = $$ref_str + 0;
+        # 範囲外を除去
+        if( $$ref_str < $min || $max < $$ref_str ) { $$ref_str = $default; }
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+# このスクリプトのソースコードを表示する
+sub sub_show_src{
+    # ソースコードのファイルを読み込む
+    open(FH, "<".$str_this_script) or sub_file_error_exit();
+    my @data = <FH>;
+    close(FH);
+    # 画面表示を行う
+    print "Content-type: text/plain\n\n";
+    foreach my $data_line (@data) {
+        print decode('utf-8', $data_line);
+    }
+}
+
+# ファイル読み込みエラーの場合の画面表示
+sub sub_file_error_exit{
+    print "Content-type: text/plain\n\n";
+    print "Error : can't read source code.\n";
+    exit();
+}
+
