@@ -53,11 +53,12 @@ my $param_unit_height = 'px';
 my $param_maptype = 'roadmap';
 my $str_html_icon = 'http://labs.google.com/ridefinder/images/mm_20_white.png';
 my $str_html_color = 'blue';
-my $int_max_uploadsize = 300*1024;    # CSVファイルの最大アップロードサイズ
+my $int_max_uploadsize = 1024*1024;    # CSVファイルの最大アップロードサイズ
 my $flag_add_marker = 1;              # Web出力でmarkerを描画
 my $flag_add_line = 1;                # Web出力でlineを描画
 my $param_key = '';
 my $param_server = 'maps.googleapis.com';
+my $flag_server_https = 1;
 my $param_init = 'callback';
 
 
@@ -138,6 +139,12 @@ my $param_init = 'callback';
         if($param_server ne 'maps.googleapis.com' && $param_server ne 'maps.google.cn'
             && $param_server ne 'maps.google.com'){ $param_server = 'maps.googleapis.com'; }
     }
+
+    if(defined($q->param('server_https')) && length($q->param('server_https'))>0 &&
+                        $q->param('server_https') eq 'enable'){
+        $flag_server_https = 1;
+    }
+    else { $flag_server_https = 0; }
 
     if ( defined( $q->param('init') ) ) {
         $param_init = trim_space_tab($q->param('init'));
@@ -286,6 +293,8 @@ sub sub_disp_upload_filepick{
         . '      <option value="maps.google.cn"' . ($param_server eq 'maps.google.cn' ? ' selected ' : '') . '>maps.google.cn</option>' . "\n"
         . '      <option value="maps.google.com"' . ($param_server eq 'maps.google.com' ? ' selected ' : '') . '>maps.google.com</option>' . "\n"
         . "      </select>\n"
+        . '      &nbsp;&nbsp;<input type="checkbox" name="server_https" value="enable" '
+        . ($flag_server_https == 1 ? 'checked="checked"' : '') . ' />httpsサイト</td></tr>' . "\n"
         . "    </td></tr>\n"
 
         . "    <tr><td>JavaScript起動方法</td><td>\n"
@@ -391,7 +400,9 @@ sub sub_gpx_to_csv {
 sub sub_compose_script_call {
     my $str = shift;
     $$str = sprintf(
-        '<script type="text/javascript" src="http://' . $param_server . '/maps/api/js?'
+        '<script type="text/javascript" src="'
+        . ($flag_server_https == 1 ? 'https://' : 'http://' )
+        . $param_server . '/maps/api/js?'
         . ($param_init eq 'callback' ? 'callback=initMap' : '' )
         . ($param_key ne '' ? '&key='.$param_key : '' )
         . '"' . ($param_init eq 'callback' ? ' async defer' : '' )
