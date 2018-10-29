@@ -200,13 +200,28 @@ my $param_init = 'callback';
             $str_script_call_html_code =~ s/>/&gt;/g;
             print(
                 '<pre class="command_box">' . "\n"
-                . $str_script_call_html_code . "\n"
                 . '&lt;script type="text/javascript" src="MY_DRAWING_DATA.js"&gt;&lt;/script&gt;' . "\n"
+                . $str_script_call_html_code . "\n"
                 .'</pre>' . "\n"
             );
         }
-        # 結果の画面表示（マップ領域HTMLコード）
         if($flag_download_mode == 0) {
+            # 結果の画面表示（マップ領域インラインJavaScriptコード）
+            print("<script type=\"text/javascript\">\n"
+                . "<!--\n\n");
+            if(my $str_error = sub_output_result($str_jsfile)){
+                print("\n\n"
+                    . "-->\n"
+                    . "</script>\n"
+                    . "<p>sub_output_result error :".$str_error."</p>\n");
+                sub_print_returnlink();
+                print $q->end_html;
+                exit;
+            }
+            print("\n\n"
+                . "-->\n"
+                . "</script>\n");
+            # 結果の画面表示（マップ領域HTMLコード）
             if(my $str_error = sub_output_result($str_outputfile)){
                 print("<p>sub_output_result error :".$str_error."</p>\n");
                 sub_print_returnlink();
@@ -215,20 +230,15 @@ my $param_init = 'callback';
             }
         }
         else {
+            # HTMLコード一時ファイルを削除
             delete_temp_file($str_outputfile);
-        }
-        # 結果の画面表示（マップ領域インラインJavaScriptコード）
-        if(my $str_error = sub_output_result($str_jsfile)){
-            print("<p>sub_output_result error :".$str_error."</p>\n");
-            sub_print_returnlink();
-            print $q->end_html;
-            exit;
-        }
-        # 結果の画面表示（マップ領域HTMLコード）
-        if($flag_download_mode == 0) {
-            print("\n\n".
-                    "-->\n".
-                    "</script>\n");
+            # JavaScriptファイルダウンロード
+            if(my $str_error = sub_output_result($str_jsfile)){
+                print("sub_output_result error :".$str_error."\n");
+                exit;
+            }
+            # HTMLコード一時ファイルを削除
+            delete_temp_file($str_jsfile);
         }
     }
     else{
@@ -501,8 +511,9 @@ sub sub_csv_to_gmap {
     binmode(FH, ":utf8");
     printf(FH 
         $str_script_call_html_code
-        . "<script type=\"text/javascript\">\n"
-        . "<!--\n\n");
+#        . "<script type=\"text/javascript\">\n"
+#        . "<!--\n\n");
+        );
 
 
     close(FH);
