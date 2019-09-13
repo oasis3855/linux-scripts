@@ -12,6 +12,7 @@
 # Version 0.2.1 (2012/06/07)
 # Version 0.3 (2012/06/08)
 # Version 0.4 (2014/05/10)
+# Version 0.4-2 (2019/09/13)
 #
 
 import sys
@@ -78,6 +79,11 @@ class CheckImapMail:
 
         self.checknow_item = gtk.MenuItem(MUA_MENU_STRING)
         self.checknow_item.connect("activate", self.menu_exec_mailprog)
+        self.checknow_item.show()
+        self.menu.append(self.checknow_item)
+
+        self.checknow_item = gtk.MenuItem("Chromiumブラウザを開く")
+        self.checknow_item.connect("activate", self.menu_exec_chromium)
         self.checknow_item.show()
         self.menu.append(self.checknow_item)
 
@@ -269,6 +275,11 @@ class CheckImapMail:
     # メニュー ： メールソフトを起動する
     def menu_exec_mailprog(self, widget):
         os.spawnlp(os.P_NOWAIT, MUA_PROGRAM, MUA_PROGRAM)
+
+    #####
+    # メニュー ： Chromiumブラウザを起動する
+    def menu_exec_chromium(self, widget):
+        os.spawnlp(os.P_NOWAIT, "chromium-browser", "chromium-browser", "https://mail.google.com/")
 
     #####
     # 設定ファイルから読み込む
