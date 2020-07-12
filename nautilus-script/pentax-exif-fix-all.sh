@@ -44,7 +44,6 @@ do
         if [ $EXT = "jpg" -o $EXT = "jpeg" -o $EXT = "JPG" -o $EXT = "JPEG" ]
         then
             EXIF_MAKE=`exiftool -s -s -s -Make "$FULLPATH"`
-            echo "$FULLPATH , $EXIF_MAKE"
             if [ -n "$EXIF_MAKE" -a  "$EXIF_MAKE" = "PENTAX" ]
             then
                 exiftool -overwrite_original -Make="Pentax Corp." "$FULLPATH"
