@@ -1,0 +1,37 @@
+名,Family Name
+姓,Given Name
+表示名,Name
+ニックネーム,#
+メールアドレス,E-mail 1 - Value
+別のメールアドレス,E-mail 2 - Value
+スクリーンネーム,
+勤務先の電話番号,Phone 2 - Value
+自宅の電話番号,Phone 1 - Value
+FAX 番号,Phone 4 - Value
+ポケットベル番号,
+携帯電話番号,Phone 3 - Value
+番地 (自宅),Address 1 - Street
+番地 (自宅) 2,
+市区町村 (自宅),Address 1 - City
+都道府県 (自宅),Address 1 - Region
+郵便番号 (自宅),
+国 (自宅),
+番地 (勤務先),
+番地 (勤務先) 2,
+市区町村 (勤務先),
+都道府県 (勤務先),
+郵便番号 (勤務先),
+国 (勤務先),
+役職,
+部門,
+組織,
+Web ページ 1,
+Web ページ 2,
+誕生年,
+誕生月,
+誕生日,Birthday
+追加情報 1,
+追加情報 2,
+追加情報 3,
+追加情報 4,
+メモ,Notes
