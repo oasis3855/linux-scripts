@@ -1,0 +1,72 @@
+## 各種スクリプト類（Linux）<br />Linux tool scripts<!-- omit in toc -->
+
+[Home](https://oasis3855.github.io/webpage/) > [Software](https://oasis3855.github.io/webpage/software/index.html) > [Software Download](https://oasis3855.github.io/webpage/software/software-download.html) > ***linux-scripts*** (this page)
+
+<br />
+<br />
+
+- [住所録CSVファイル相互変換 (Linux, Perlスクリプト)](#住所録csvファイル相互変換-linux-perlスクリプト)
+- [Gnomeデスクトップ壁紙 スライドショー cron呼出スクリプト (Linux シェルスクリプト)](#gnomeデスクトップ壁紙-スライドショー-cron呼出スクリプト-linux-シェルスクリプト)
+- [Gnomeデスクトップ壁紙 スライドショー XML作成 (Linux Perlスクリプト)](#gnomeデスクトップ壁紙-スライドショー-xml作成-linux-perlスクリプト)
+- [SMTPサーバを利用するテキストメール送信Perlスクリプト](#smtpサーバを利用するテキストメール送信perlスクリプト)
+- [mp3 ID3タグ読込・書込ツール(Perlスクリプト)](#mp3-id3タグ読込書込ツールperlスクリプト)
+- [Linux Nautilusのコンテキストメニュー「スクリプト」で使う小技スクリプト類](#linux-nautilusのコンテキストメニュースクリプトで使う小技スクリプト類)
+
+<br />
+<br />
+
+## 住所録CSVファイル相互変換 (Linux, Perlスクリプト)
+
+Thunderbird、GMailの住所録（アドレス帳や連絡先とも呼ばれる）からエクスポートしたCSVファイルの形式を相互変換するためのスクリプト。変換ルールは、定義ファイルを作ることでユーザの使っている住所録管理ソフトにも対応することも出来ます
+
+[配布ディレクトリ addressbook_converter](addressbook_converter/README.md) (2011/12/08)
+
+<br />
+<br />
+
+
+## Gnomeデスクトップ壁紙 スライドショー cron呼出スクリプト (Linux シェルスクリプト)
+
+Gnomeデスクトップ壁紙を、指定したディレクトリ内の画像の中からランダムに選択した画像ファイルに切り替えるシェルスクリプト。
+
+このスクリプトをcronより定期的に実行することで、壁紙スライドショーを実現できる
+
+[配布ディレクトリ gnome-change-desktop-image](gnome-change-desktop-image/README.md) (2020/01/11)
+
+<br />
+<br />
+
+## Gnomeデスクトップ壁紙 スライドショー XML作成 (Linux Perlスクリプト)
+
+Gnomeデスクトップ壁紙（画像）のスライドショー機能を使うためのXMLファイルを作成するPerlスクリプト
+
+[配布ディレクトリ gnome-desktop-img-xmlmaker](gnome-desktop-img-xmlmaker/README.md)  (2011/04/20)
+
+<br />
+<br />
+
+## SMTPサーバを利用するテキストメール送信Perlスクリプト
+
+```Net::SMTPS```ライブラリを用いたテキストメール送信スクリプト。事前に設定ファイルに格納したSMTPサーバの認証情報を利用し、任意の相手先にテキストメールを送信する
+
+ここで配布しているスクリプトをカスタマイズして利用するためのテンプレート的な利用法を想定している
+
+[配布ディレクトリ mail-textfile-send](mail-textfile-send/README.md)  (2019/09/23)
+
+<br />
+<br />
+
+## mp3 ID3タグ読込・書込ツール(Perlスクリプト)
+
+MP3::Tagライブラリを用いて、mp3ファイルのID3v1/ID3v2タグの読み書きなどを行うコマンドラインツール。多数のファイルの一括処理を行うときに、ここで配布しているスクリプトをカスタマイズして使うためのテンプレート的な利用法を想定している
+
+[配布ディレクトリ mp3_id3_tool](mp3_id3_tool/README.md)  (2012/03/20)
+
+<br />
+<br />
+
+## Linux Nautilusのコンテキストメニュー「スクリプト」で使う小技スクリプト類
+
+Linux Nautilus（ファイル ブラウザ）のコンテキストメニュー「スクリプト」で参照されるディレクトリに、ここで配布するスクリプトを置いて、いわゆるWindows エクスプローラーでの「送る」でファイルを開く的なことを実現するための小技スクリプト類
+
+[配布ディレクトリ nautilus-script](nautilus-script/README.md)  (2020/07/12)
