@@ -20,7 +20,7 @@ Last Updated : Jan. 2020
 
 ## ソフトウエアのダウンロード
 
-- [このGitHubリポジトリを参照する（ソースコード）](../gnome-change-desktop-image/)
+- ![download icon](../readme_pics/soft-ico-download-darkmode.gif)    [このGitHubリポジトリを参照する（ソースコード）](../gnome-change-desktop-image/)
 
 
 ## 概要

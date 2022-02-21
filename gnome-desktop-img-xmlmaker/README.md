@@ -20,7 +20,7 @@ Last Updated : Apr. 2011
 
 ## ソフトウエアのダウンロード
 
-- [このGitHubリポジトリを参照する（ソースコード）](../gnome-desktop-img-xmlmaker/)
+- ![download icon](../readme_pics/soft-ico-download-darkmode.gif)    [このGitHubリポジトリを参照する（ソースコード）](../gnome-desktop-img-xmlmaker/)
 
 
 ## 概要

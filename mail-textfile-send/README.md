@@ -20,7 +20,7 @@ Last Updated : Sep. 2019
 
 ## ソフトウエアのダウンロード
 
-- [このGitHubリポジトリを参照する（ソースコード）](../mail-textfile-send/)
+- ![download icon](../readme_pics/soft-ico-download-darkmode.gif)  [このGitHubリポジトリを参照する（ソースコード）](../mail-textfile-send/)
 
 ## 概要
 

@@ -24,7 +24,7 @@ Last Updated : Dec. 2011
 
 ## ソフトウエアのダウンロード
 
-- [このGitHubリポジトリを参照する（ソースコード）](../addressbook_converter/)
+- ![download icon](../readme_pics/soft-ico-download-darkmode.gif)   [このGitHubリポジトリを参照する（ソースコード）](../addressbook_converter/) 
 
 ## 概要
 

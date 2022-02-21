@@ -19,7 +19,7 @@ Last Updated : Jul. 2020
 
 ## ソフトウエアのダウンロード
 
-- [このGitHubリポジトリを参照する（ソースコード）](../nautilus-script/)
+-![download icon](../readme_pics/soft-ico-download-darkmode.gif)  [このGitHubリポジトリを参照する（ソースコード）](../nautilus-script/)
 
 ## 概要
 

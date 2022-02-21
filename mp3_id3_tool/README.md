@@ -20,7 +20,7 @@ Last Updated : Mar. 2012
 
 ## ソフトウエアのダウンロード
 
-- [このGitHubリポジトリを参照する（ソースコード）](../mp3_id3_tool/)
+- ![download icon](../readme_pics/soft-ico-download-darkmode.gif)  [このGitHubリポジトリを参照する（ソースコード）](../mp3_id3_tool/)
 
 ## 概要
 
