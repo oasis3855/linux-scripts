@@ -1,0 +1,9 @@
+
+[GdmGreeterTheme]
+Encoding=UTF-8
+Greeter=LeidenWindmill.xml
+Name=Leiden Windmill
+Description=1280x1024 resolution
+Author=INOUE Hirokazu
+Copyright=Copyright 2008, INOUE Hirokazu
+Screenshot=screenshot.png

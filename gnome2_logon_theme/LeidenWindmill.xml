@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE greeter SYSTEM "greeter.dtd">
+<greeter>
+
+	<!-- Background Image -->
+    <item type="pixmap">
+        <pos y="0" x="0" width="100%" height="100%" anchor="nw"/>
+        <normal file="LeidenWindmill_1280.jpg" />
+    </item>
+
+	<!-- User/Password Input Box -->
+    <item type="rect">
+	    <pos y="85%" x="10%" width="100%" height="50" anchor="nw"/>
+	    <box orientation="vertical">
+		    <item type="rect">
+			    <pos y="0" x="0" width="box" height="box" anchor="nw"/>
+			    <box orientation="horizontal">
+							<!-- Text Label -->
+						    <item type="label" id="pam-prompt">
+								<pos x="0"/>
+								<normal font="Sans 10" color="#ffffff"/>
+								<stock type="username-label"/>
+							</item>
+							<!-- Input Box -->
+							<item type="entry" id="user-pw-entry">
+							    <pos x="20" width="160" height="18"/>
+							    <normal font="Sans 10" color="#000000"/>
+							    <text/>
+						    </item>	
+			    </box>
+		    </item>
+	    </box>
+    </item>
+
+
+	<!-- timed login information -->
+    <item type="rect">
+	    <pos y="85%" x="10%" width="100%" height="60" anchor="nw"/>
+	    <box>
+		    <item type="label" id="timed-label">
+			    <show type="timed"/>
+			    <pos y="20" x="0" width="100%" height="box" anchor="nw"/>
+			    <normal font="Sans Bold 10" color="#ffffff"/>
+			    <stock type="timed-label"/>
+		    </item>
+		</box>
+	</item>
+
+	<!-- caps lock warning -->
+    <item type="rect">
+	    <pos y="85%" x="10%" width="100%" height="60" anchor="nw"/>
+	    <box>
+		    <item type="label" id="caps-lock-warning">
+			    <pos y="20" x="0" width="100%" height="box" anchor="nw"/>
+			    <normal font="Sans Bold 10" color="#ffffff"/>
+			    <stock type="caps-lock-warning"/>
+		    </item>
+		</box>
+	</item>
+
+	<!-- caps lock warning -->
+    <item type="rect">
+	    <pos y="85%" x="10%" width="100%" height="60" anchor="nw"/>
+	    <box>
+		    <item type="label" id="pam-error">
+			    <pos y="40" x="0" width="100%" height="box" anchor="nw"/>
+			    <normal font="Sans 10" color="#ffffff"/>
+			    <text/>
+		    </item>
+		</box>
+	</item>
+
+
+    <item type="rect">
+	    <pos y="100%" x="0" width="box" height="box" anchor="sw"/>
+	    <box xpadding="50" spacing="5" orientation="vertical">
+		    <item type="rect">
+			    <pos y="100%" x="0" width="box" height="box" anchor="sw"/>
+			    <box ypadding="10" orientation="horizontal">
+				    <item type="rect">
+					    <pos y="0" x="0" width="box" height="box" anchor="nw"/>
+					    <box orientation="horizontal">
+						    <item type="rect" id="language_button" button="true">
+							    <pos y="50%" width="box" height="box" anchor="w"/>
+							    <box xpadding="6" orientation="horizontal">
+							    	<!--
+								    <item type="pixmap">
+									    <normal file="icon-language.png"/>
+								    </item>
+								    -->
+								    <item type="label">
+									    <active font="Sans Bold 10" color="#b49d9c"/>
+									    <prelight font="Sans Bold 10" color="#ccabbb"/>
+									    <normal font="Sans Bold 10" color="#ffffff"/>
+									    <pos y="50%" anchor="w"/>
+									    <stock type="language"/>
+								    </item>
+							    </box>
+						    </item>
+						    <item type="rect" id="session_button" button="true">
+							    <pos y="50%" width="box" height="box" anchor="w"/>
+							    <box xpadding="6" orientation="horizontal">
+							    	<!--
+								    <item type="pixmap">
+									    <normal file="icon-session.png"/>
+								    </item>
+								    -->
+								    <item type="label">
+									    <active font="Sans Bold 10" color="#b49d9c"/>
+									    <prelight font="Sans Bold 10" color="#ccabbb"/>
+									    <normal font="Sans Bold 10" color="#ffffff"/>
+									    <pos y="50%" anchor="w"/>
+									    <stock type="session"/>
+								    </item>
+							    </box>
+						    </item>
+						    <item type="rect" id="reboot_button" button="true">
+							    <show modes="console" type="reboot"/>
+							    <pos y="50%" width="box" height="box" anchor="w"/>
+							    <box xpadding="6" orientation="horizontal">
+							    	<!--
+								    <item type="pixmap">
+									    <normal file="icon-reboot.png"/>
+								    </item>
+								    -->
+								    <item type="label">
+									    <active font="Sans Bold 10" color="#b49d9c"/>
+									    <prelight font="Sans Bold 10" color="#ccabbb"/>
+									    <normal font="Sans Bold 10" color="#ffffff"/>
+									    <pos y="50%" anchor="w"/>
+									    <stock type="reboot"/>
+								    </item>
+							    </box>
+						    </item>
+						    <item type="rect" id="halt_button" button="true">
+							    <show modes="console" type="halt"/>
+							    <pos y="50%" width="box" height="box" anchor="w"/>
+							    <box xpadding="6" orientation="horizontal">
+							    	<!--
+								    <item type="pixmap">
+									    <normal file="icon-shutdown.png"/>
+								    </item>
+								    -->
+								    <item type="label">
+									    <active font="Sans Bold 10" color="#b49d9c"/>
+									    <prelight font="Sans Bold 10" color="#ccabbb"/>
+									    <normal font="Sans Bold 10" color="#ffffff"/>
+									    <pos y="50%" anchor="w"/>
+									    <stock type="halt"/>
+								    </item>
+							    </box>
+						    </item>
+						    <item type="rect" id="disconnect_button" button="true">
+							    <show modes="flexi,remote"/>
+							    <pos y="50%" width="box" height="box" anchor="w"/>
+							    <box xpadding="6" orientation="horizontal">
+							    	<!--
+								    <item type="pixmap">
+									    <normal file="icon-shutdown.png"/>
+								    </item>
+								    -->
+								    <item type="label">
+									    <show modes="remote"/>
+									    <active font="Sans Bold 10" color="#b49d9c"/>
+									    <prelight font="Sans Bold 10" color="#ccabbb"/>
+									    <normal font="Sans Bold 10" color="#ffffff"/>
+									    <pos y="50%" anchor="w"/>
+									    <stock type="disconnect"/>
+								    </item>
+								    <item type="label">
+									    <show modes="flexi"/>
+									    <active font="Sans Bold 10" color="#b49d9c"/>
+									    <prelight font="Sans Bold 10" color="#ccabbb"/>
+									    <normal font="Sans Bold 10" color="#ffffff"/>
+									    <pos y="50%" anchor="w"/>
+									    <stock type="quit"/>
+								    </item>
+							    </box>
+						    </item>
+					    </box>
+				    </item>
+			    </box>
+		    </item>
+	    </box>
+    </item>
+	<!-- Date/Time -->
+    <item type="rect">
+	    <pos y="100%" x="100%" width="box" height="box" anchor="se"/>
+	    <box ypadding="10" xpadding="20" spacing="2" orientation="vertical">
+		    <item type="label" id="clock">
+			    <normal font="Sans 10" color="#ffffff" alpha=".9"/>
+			    <pos x="50%" anchor="n"/>
+			    <text>%c</text>
+		    </item>
+		    <item type="label">
+			    <normal font="Sans Bold 10" color="#ffffff" alpha=".9"/>
+			    <pos x="50%" anchor="n"/>
+			    <text>%h</text>
+		    </item>
+
+	    </box>            
+    </item>
+
+</greeter>

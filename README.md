@@ -8,9 +8,12 @@
 - [住所録CSVファイル相互変換 (Linux, Perlスクリプト)](#住所録csvファイル相互変換-linux-perlスクリプト)
 - [Gnomeデスクトップ壁紙 スライドショー cron呼出スクリプト (Linux シェルスクリプト)](#gnomeデスクトップ壁紙-スライドショー-cron呼出スクリプト-linux-シェルスクリプト)
 - [Gnomeデスクトップ壁紙 スライドショー XML作成 (Linux Perlスクリプト)](#gnomeデスクトップ壁紙-スライドショー-xml作成-linux-perlスクリプト)
+- [Gnome 2 ログオンテーマ](#gnome-2-ログオンテーマ)
+- [未読メール通知Gnomeインジケータ アプレット](#未読メール通知gnomeインジケータ-アプレット)
 - [SMTPサーバを利用するテキストメール送信Perlスクリプト](#smtpサーバを利用するテキストメール送信perlスクリプト)
 - [mp3 ID3タグ読込・書込ツール(Perlスクリプト)](#mp3-id3タグ読込書込ツールperlスクリプト)
 - [Linux Nautilusのコンテキストメニュー「スクリプト」で使う小技スクリプト類](#linux-nautilusのコンテキストメニュースクリプトで使う小技スクリプト類)
+- [天気・気温通知Gnomeインジケータ アプレット](#天気気温通知gnomeインジケータ-アプレット)
 
 <br />
 <br />
@@ -45,6 +48,24 @@ Gnomeデスクトップ壁紙（画像）のスライドショー機能を使う
 <br />
 <br />
 
+## Gnome 2 ログオンテーマ
+
+Gnome 2 ログオンテーマで任意の画像を用いるサンプル例
+
+[配布ディレクトリ gnome2_logon_theme](gnome2_logon_theme/README.md)  (2008/09/14)
+
+<br />
+<br />
+
+## 未読メール通知Gnomeインジケータ アプレット
+
+Ubuntu LinuxのGnomeパネルまたはUnityパネルの通知領域に常駐する、未読メール通知インジケータです。IMAP4メール サーバとの通信はSSLを用いています
+
+[配布ディレクトリ imap4_mail_indicator](imap4_mail_indicator/README.md)  (2014/05/10)
+
+<br />
+<br />
+
 ## SMTPサーバを利用するテキストメール送信Perlスクリプト
 
 ```Net::SMTPS```ライブラリを用いたテキストメール送信スクリプト。事前に設定ファイルに格納したSMTPサーバの認証情報を利用し、任意の相手先にテキストメールを送信する
@@ -70,3 +91,12 @@ MP3::Tagライブラリを用いて、mp3ファイルのID3v1/ID3v2タグの読�
 Linux Nautilus（ファイル ブラウザ）のコンテキストメニュー「スクリプト」で参照されるディレクトリに、ここで配布するスクリプトを置いて、いわゆるWindows エクスプローラーでの「送る」でファイルを開く的なことを実現するための小技スクリプト類
 
 [配布ディレクトリ nautilus-script](nautilus-script/README.md)  (2020/07/12)
+
+<br />
+<br />
+
+## 天気・気温通知Gnomeインジケータ アプレット
+
+Ubuntu LinuxのGnomeパネルまたはUnityパネルの通知領域に常駐する、天気・気温インジケータ
+
+[配布ディレクトリ weather_indicator](weather_indicator/README.md)  (2014/05/17)
