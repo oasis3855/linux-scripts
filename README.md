@@ -9,6 +9,7 @@
 - [Gnomeデスクトップ壁紙 スライドショー cron呼出スクリプト (Linux シェルスクリプト)](#gnomeデスクトップ壁紙-スライドショー-cron呼出スクリプト-linux-シェルスクリプト)
 - [Gnomeデスクトップ壁紙 スライドショー XML作成 (Linux Perlスクリプト)](#gnomeデスクトップ壁紙-スライドショー-xml作成-linux-perlスクリプト)
 - [Gnome 2 ログオンテーマ](#gnome-2-ログオンテーマ)
+- [GPX GPSログファイル 変換ツール類](#gpx-gpsログファイル-変換ツール類)
 - [未読メール通知Gnomeインジケータ アプレット](#未読メール通知gnomeインジケータ-アプレット)
 - [SMTPサーバを利用するテキストメール送信Perlスクリプト](#smtpサーバを利用するテキストメール送信perlスクリプト)
 - [mp3 ID3タグ読込・書込ツール(Perlスクリプト)](#mp3-id3タグ読込書込ツールperlスクリプト)
@@ -53,6 +54,15 @@ Gnomeデスクトップ壁紙（画像）のスライドショー機能を使う
 Gnome 2 ログオンテーマで任意の画像を用いるサンプル例
 
 [配布ディレクトリ gnome2_logon_theme](gnome2_logon_theme/README.md)  (2008/09/14)
+
+<br />
+<br />
+
+## GPX GPSログファイル 変換ツール類 
+
+GPX形式のGPSログファイルを、CSVファイルやGoogle Maps Javascript API形式などに変換するためのスクリプト
+
+[配布ディレクトリ gpx-tools](gpx-tools/README.md)  (2021/09/19)
 
 <br />
 <br />
