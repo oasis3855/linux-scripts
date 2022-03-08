@@ -1,6 +1,6 @@
 ## 住所録CSVファイル相互変換 (Linux, Perlスクリプト)<br />Address Book CSV converter<!-- omit in toc -->
 
-[Home](https://oasis3855.github.io/webpage/) > [Software](https://oasis3855.github.io/webpage/software/index.html) > [Software Download](https://oasis3855.github.io/webpage/software/software-download.html) > [linux-scripts](../) > ***addressbook_converter*** (this page)
+[Home](https://oasis3855.github.io/webpage/) > [Software](https://oasis3855.github.io/webpage/software/index.html) > [Software Download](https://oasis3855.github.io/webpage/software/software-download.html) > [linux-scripts](../README.md) > ***addressbook_converter*** (this page)
 
 <br />
 <br />
@@ -107,8 +107,8 @@ Given Name,Family Name,Address 1,Address 2
 
 ## バージョン情報
 
-- Version 0.1 (2011/Nov/27)
-- Version 0.2 (2011/Dec/08)
+- Version 0.1 (2011/11/27)
+- Version 0.2 (2011/12/08)
 
 ## ライセンス
 

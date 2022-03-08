@@ -5,7 +5,7 @@
 <br />
 <br />
 
-Last Updated : Apr. 2011
+Last Updated : Apr. 2011 -- ***this is discontinued software 開発終了***
 
 - [ソフトウエアのダウンロード](#ソフトウエアのダウンロード)
 - [概要](#概要)
