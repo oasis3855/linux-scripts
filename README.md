@@ -6,6 +6,7 @@
 <br />
 
 - [住所録CSVファイル相互変換 (Linux, Perlスクリプト)](#住所録csvファイル相互変換-linux-perlスクリプト)
+- [Banshee/Rhythmboxのインターネットラジオ一覧をインポート/エクスポートするPerlスクリプト (Linux)](#bansheerhythmboxのインターネットラジオ一覧をインポートエクスポートするperlスクリプト-linux)
 - [Gnomeデスクトップ壁紙 スライドショー cron呼出スクリプト (Linux シェルスクリプト)](#gnomeデスクトップ壁紙-スライドショー-cron呼出スクリプト-linux-シェルスクリプト)
 - [Gnomeデスクトップ壁紙 スライドショー XML作成 (Linux Perlスクリプト)](#gnomeデスクトップ壁紙-スライドショー-xml作成-linux-perlスクリプト)
 - [Gnome 2 ログオンテーマ](#gnome-2-ログオンテーマ)
@@ -29,6 +30,15 @@ Thunderbird、GMailの住所録（アドレス帳や連絡先とも呼ばれる�
 <br />
 <br />
 
+
+## Banshee/Rhythmboxのインターネットラジオ一覧をインポート/エクスポートするPerlスクリプト (Linux)
+
+Ubuntuの標準メディアプレーヤのBansheeとRhythmboxで、インターネットラジオ一覧をプレイリストファイル（PLS形式）にインポート／エクスポートするスクリプト
+
+[配布ディレクトリ banshee-rhythmbox-import-export](banshee-rhythmbox-import-export/README.md) (2012/03/06)
+
+<br />
+<br />
 
 ## Gnomeデスクトップ壁紙 スライドショー cron呼出スクリプト (Linux シェルスクリプト)
 
