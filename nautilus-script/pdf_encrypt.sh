@@ -57,7 +57,7 @@ then
 fi
 
 #CMDLINE="pdftk \""$DIR"/"$FULLPATH_ORG"\" output \""$DIR"/"$FULLPATH_MOD"\" user_pw "$PASSWORD
-CMDLINE="cd \"$DIR\";pdftk \"$FULLPATH_ORG\" output \"$FULLPATH_MOD\" user_pw "$PASSWORD
+CMDLINE="cd \"$DIR\";pdftk \"$FULLPATH_ORG\" output \"$FULLPATH_MOD\" user_pw \"$PASSWORD\""
 
 
 gdialog --title "コマンドラインの表示" --yesno "次のコマンドを実行します\n\n$CMDLINE"
